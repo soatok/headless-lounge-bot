@@ -1,7 +1,7 @@
 {
-    "name": "slim/slim-skeleton",
-    "description": "A Slim Framework skeleton application for rapid development",
-    "keywords": ["microframework", "rest", "router", "psr7"],
+    "name": "soatok/headless-lounge-bot",
+    "description": "Telegram bot for ensuring group access is limited to e.g. Twitch subscribers and/or Patreon supporters.",
+    "keywords": ["telegram", "telegram bot", "furry", "Twitch", "Patreon"],
     "homepage": "http://github.com/soatok/headless-lounge-bot",
     "license": "ISC",
     "authors": [
@@ -13,6 +13,10 @@
     ],
     "require": {
         "php": "^7.3",
+        "ext-json": "*",
+        "ext-pdo": "*",
+        "ezyang/htmlpurifier": "^4",
+        "guzzlehttp/guzzle": "^6",
         "slim/slim": "^3.1",
         "soatok/anthrokit": "^0|^1"
     },
@@ -22,7 +26,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Soatok\\HeadlessLoungeBot\\": "src/HeadlessLoungeBot"
+            "Soatok\\HeadlessLoungeBot\\": "src/HeadlessLoungeBot/"
         }
     },
     "autoload-dev": {
@@ -35,7 +39,7 @@
         "sort-packages": true
     },
     "scripts": {
-        "start": "php -S 127.0.0.1:8080 -t public",
+        "start": "php -S 127.0.0.1:7199 -t public",
         "test": "phpunit"
     }
 }

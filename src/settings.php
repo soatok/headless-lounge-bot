@@ -1,12 +1,23 @@
 <?php
-return [
+declare(strict_types=1);
+use ParagonIE\HiddenString\HiddenString;
+
+$token = '';
+if (file_exists(APP_ROOT . '/local/telegram-token.php')) {
+    $token = include APP_ROOT . '/local/telegram-token.php';
+}
+$default = [
     'settings' => [
         'displayErrorDetails' => true, // set to false in production
         'addContentLengthHeader' => false, // Allow the web server to send the content-length header
 
-        // Renderer settings
-        'renderer' => [
-            'template_path' => __DIR__ . '/../templates/',
+        'telegram' => new HiddenString($token),
+
+        'database' => [
+            'dsn' => 'pgsql:host=localhost;dbname=headlesslounge',
+            'username' => 'soatok',
+            'password' => 'soatok',
+            'options' => []
         ],
 
         // Monolog settings
@@ -17,3 +28,10 @@ return [
         ],
     ],
 ];
+
+if (file_exists(APP_ROOT . '/local/settings.php')) {
+    $local = include APP_ROOT . '/local/settings.php';
+    return $local + $default;
+}
+
+return $default;

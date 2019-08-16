@@ -1,0 +1,14 @@
+{
+  "report-only": false,
+  "img-src": {
+    "allow": [
+      "*"
+    ]
+  },
+  "script-src": {
+    "allow": []
+  },
+  "style-src": {
+    "allow": []
+  }
+}

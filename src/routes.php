@@ -1,17 +1,17 @@
 <?php
+namespace Soatok\HeadlessLoungeBot\Endpoints;
 
 use Slim\App;
+use Slim\Container;
 use Slim\Http\Request;
 use Slim\Http\Response;
 
 return function (App $app) {
     $container = $app->getContainer();
+    $app->any('/', 'homepage');
+    $app->any('', 'homepage');
 
-    $app->get('/[{name}]', function (Request $request, Response $response, array $args) use ($container) {
-        // Sample log message
-        $container->get('logger')->info("Slim-Skeleton '/' route");
-
-        // Render index view
-        return $container->get('renderer')->render($response, 'index.phtml', $args);
-    });
+    $container['homepage'] = function (Container $c) {
+        return new HomePage($c);
+    };
 };
