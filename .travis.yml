@@ -1,0 +1,26 @@
+language: php
+sudo: false
+
+addons:
+  postgresql: "9.6"
+
+services:
+  - postgresql
+
+matrix:
+  fast_finish: true
+  include:
+    - php: "7.3"
+
+before_install:
+  - mkdir local
+  - chmod 0777 local
+  - chmod +x tests/travis-install.sh
+
+install:
+  - composer install
+  - tests/travis-install.sh
+
+script:
+  - vendor/bin/phpunit
+  - vendor/bin/psalm
