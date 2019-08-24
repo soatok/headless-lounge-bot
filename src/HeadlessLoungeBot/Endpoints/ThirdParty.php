@@ -3,24 +3,39 @@ declare(strict_types=1);
 namespace Soatok\HeadlessLoungeBot\Endpoints;
 
 use Interop\Container\Exception\ContainerException;
+use ParagonIE\Certainty\Exception\CertaintyException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Container;
 use Soatok\AnthroKit\Endpoint;
+use Soatok\HeadlessLoungeBot\Telegram;
+use Soatok\HeadlessLoungeBot\Twitch;
 
 /**
- * Class HomePage
+ * Class ThirdParty
  * @package Soatok\HeadlessLoungeBot\Endpoints
  */
-class HomePage extends Endpoint
+class ThirdParty extends Endpoint
 {
+    /** @var Telegram $telegram */
+    protected $telegram;
+
+    /** @var Twitch $twitch */
+    protected $twitch;
+
     /**
-     * HomePage constructor.
+     * Start constructor.
+     *
      * @param Container $container
      * @throws ContainerException
+     * @throws CertaintyException
+     * @throws \SodiumException
      */
     public function __construct(Container $container)
     {
+        $this->telegram = new Telegram($container);
+        $this->twitch = new Twitch($container);
+
         parent::__construct($container);
     }
 
@@ -35,6 +50,8 @@ class HomePage extends Endpoint
         ?ResponseInterface $response = null,
         array $routerParams = []
     ): ResponseInterface {
-        return $this->json(['success']);
+
+
+        return $this->json([]);
     }
 }

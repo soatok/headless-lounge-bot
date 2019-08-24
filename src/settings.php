@@ -1,17 +1,38 @@
 <?php
 declare(strict_types=1);
 use ParagonIE\HiddenString\HiddenString;
+use Soatok\DholeCrypto\Keyring;
 
-$token = '';
+$telegram = '';
 if (file_exists(APP_ROOT . '/local/telegram-token.php')) {
-    $token = include APP_ROOT . '/local/telegram-token.php';
+    $telegram = include APP_ROOT . '/local/telegram-token.php';
 }
+$botUsername = '';
+if (file_exists(APP_ROOT . '/local/telegram-username.php')) {
+    $botUsername = include APP_ROOT . '/local/telegram-username.php';
+}
+$twitch = [
+    'client-id' => '',
+    'client-secret' => ''
+];
+if (file_exists(APP_ROOT . '/local/twitch.php')) {
+    $twitch = include APP_ROOT . '/local/twitch.php';
+};
+
+if (file_exists(APP_ROOT . '/local/key.php')) {
+    $key = include APP_ROOT . '/local/key.php';
+} else {
+    $key = (new Keyring())->load(
+        'symmetricSKuo8nJ58ytvHWGL3ooy0q_ANFk-LKoi8whQGv0gKHxRRpFf-Ayr0WUbyqhhYNcD'
+    );
+}
+
 $default = [
     'settings' => [
         'displayErrorDetails' => true, // set to false in production
         'addContentLengthHeader' => false, // Allow the web server to send the content-length header
 
-        'telegram' => new HiddenString($token),
+        'encryption-key' => $key,
 
         'database' => [
             'dsn' => 'pgsql:host=localhost;dbname=headlesslounge',
@@ -20,12 +41,9 @@ $default = [
             'options' => []
         ],
 
-        // Monolog settings
-        'logger' => [
-            'name' => 'slim-app',
-            'path' => isset($_ENV['docker']) ? 'php://stdout' : __DIR__ . '/../logs/app.log',
-            'level' => \Monolog\Logger::DEBUG,
-        ],
+        'telegram' => new HiddenString($telegram),
+        'tg-bot-username' => $botUsername,
+        'twitch' => $twitch,
     ],
 ];
 

@@ -1,8 +1,6 @@
 <?php
 namespace Soatok\HeadlessLoungeBot;
 
-use Psr\Container\ContainerInterface;
-use Psr\Http\Message\ResponseInterface;
 use Slim\App;
 use Slim\Container;
 use Slim\Http\Headers;
@@ -81,8 +79,7 @@ abstract class TestHelper
 
     /**
      * @return Response
-     * @throws \Slim\Exception\MethodNotAllowedException
-     * @throws \Slim\Exception\NotFoundException
+     * @throws \Throwable
      */
     public static function getResponse(): Response
     {

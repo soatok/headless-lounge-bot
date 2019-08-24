@@ -8,10 +8,14 @@ use Slim\Http\Response;
 
 return function (App $app) {
     $container = $app->getContainer();
+    $app->any('/telegram-updates', 'telegram-updates');
     $app->any('/', 'homepage');
     $app->any('', 'homepage');
 
     $container['homepage'] = function (Container $c) {
         return new HomePage($c);
+    };
+    $container['homepage'] = function (Container $c) {
+        return new TelegramUpdates($c);
     };
 };
