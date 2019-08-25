@@ -69,7 +69,7 @@ trait NewMessageTrait
         if (empty($state)) {
             if ($update['text'] !== '/start') {
                 $this->sendMessage('Please send `/start` begin messaging.', [
-                    'reply_to_message_id' => $update['chat']['id']
+                    'chat_id' => $update['chat']['id']
                 ]);
                 return true;
             }
@@ -82,6 +82,9 @@ trait NewMessageTrait
             $this->updateState($state, $update['from']['id']);
             // Do more here
         }
+        $this->sendMessage('DEBUG: State was not empty.', [
+            'chat_id' => $update['chat']['id']
+        ]);
         return false;
     }
 

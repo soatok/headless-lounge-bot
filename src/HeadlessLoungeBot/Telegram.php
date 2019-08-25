@@ -147,7 +147,9 @@ class Telegram
             case 'group':
                 return $this->newMessageGroup($update);
             default:
-                $this->sendMessage('DEBUG: Unknown update type, sorry...');
+                $this->sendMessage('DEBUG: Unknown update type, sorry...', [
+                    'chat_id' => $update['chat']['id']
+                ]);
                 return false;
         }
     }
