@@ -64,6 +64,15 @@ class Telegram
     }
 
     /**
+     * @param string $url
+     * @return array
+     */
+    public function setupWebook(string $url)
+    {
+        return $this->apiRequest('setupWebook', ['url' => $url]);
+    }
+
+    /**
      * @return HiddenString
      */
     public function getToken(): HiddenString
