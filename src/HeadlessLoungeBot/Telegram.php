@@ -3,12 +3,15 @@ declare(strict_types=1);
 namespace Soatok\HeadlessLoungeBot;
 
 use GuzzleHttp\Client;
+use Interop\Container\Exception\ContainerException;
 use ParagonIE\Certainty\Exception\CertaintyException;
 use ParagonIE\Certainty\RemoteFetch;
 use ParagonIE\EasyDB\EasyDB;
 use ParagonIE\HiddenString\HiddenString;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Container;
+use Soatok\HeadlessLoungeBot\Splices\Users;
+use Soatok\HeadlessLoungeBot\TelegramTraits\NewMessageTrait;
 
 /**
  * Class Telegram
@@ -16,6 +19,8 @@ use Slim\Container;
  */
 class Telegram
 {
+    use NewMessageTrait;
+
     /** @var string $botUsername */
     protected $botUsername;
 
@@ -31,14 +36,22 @@ class Telegram
     /** @var HiddenString $token */
     protected $token;
 
+    /** @var Twitch $twitch */
+    protected $twitch;
+
+    /** @var Users $users */
+    protected $users;
+
     /**
      * Telegram constructor.
      * @param Container $c
+     * @param Twitch|null $twitch
      * @param Client|null $http
      * @throws CertaintyException
+     * @throws ContainerException
      * @throws \SodiumException
      */
-    public function __construct(Container $c, ?Client $http = null)
+    public function __construct(Container $c, ?Twitch $twitch = null, ?Client $http = null)
     {
         /** @var HiddenString|string $token */
         $token = $c['settings']['telegram'];
@@ -61,6 +74,11 @@ class Telegram
             ]);
         }
         $this->http = $http;
+        if (!$twitch) {
+            $twitch = new Twitch($c, $this->http);
+        }
+        $this->twitch = $twitch;
+        $this->users = new Users($c);
     }
 
     /**
@@ -99,14 +117,38 @@ class Telegram
      */
     public function processUpdate(array $update): self
     {
+        file_put_contents(APP_ROOT . '/local/last_update_id.txt', $update['update_id']);
+        if (isset($update['message'])) {
+            $this->processNewMessage($update['message']);
+        }
+        // else {
+        // Catch all for unknown update types
         if (!is_dir(APP_ROOT . '/local/updates')) {
             mkdir(APP_ROOT . '/local/updates', 0777);
         }
         file_put_contents(
-            APP_ROOT . '/local/updates/' . time() . '.json',
+            APP_ROOT . '/local/updates/' . time().'-'.$update['update_id'] . '.json',
             json_encode($update, JSON_PRETTY_PRINT)
         );
+        // }
         return $this;
+    }
+
+    /**
+     * @param array $update
+     * @return bool
+     */
+    protected function processNewMessage(array $update)
+    {
+        $type = $update['chat']['type'];
+        switch ($type) {
+            case 'private':
+                return $this->newMessagePrivate($update);
+            case 'group':
+                return $this->newMessageGroup($update);
+            default:
+                return false;
+        }
     }
 
     /**
@@ -143,6 +185,22 @@ class Telegram
                 $this->getRequestUri($method),
                 ['json' => $params]
             )
+        );
+    }
+
+    /**
+     * @param string $message
+     * @param array $params
+     * @return array
+     */
+    public function sendMessage(string $message, array $params = []): array
+    {
+        if (empty($params['parse_mode'])) {
+            $params['parse_mode'] = 'Markdown';
+        }
+        return $this->apiRequest(
+            'sendMessage',
+            ['text' => $message] + $params
         );
     }
 

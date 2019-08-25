@@ -33,8 +33,8 @@ class TelegramUpdates extends Endpoint
      */
     public function __construct(Container $container)
     {
-        $this->telegram = new Telegram($container);
         $this->twitch = new Twitch($container);
+        $this->telegram = new Telegram($container, $this->twitch);
 
         parent::__construct($container);
     }

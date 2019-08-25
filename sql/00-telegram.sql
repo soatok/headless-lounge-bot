@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS headless_users_oauth (
     refresh_token TEXT,
     access_token TEXT,
     access_expires TIMESTAMP,
-    scope TEXT
+    scope TEXT,
+    created TIMESTAMP DEFAULT NOW(),
+    modified TIMESTAMP DEFAULT NOW()
 );
 CREATE UNIQUE INDEX ON headless_users_oauth (userid, service);
 
@@ -27,11 +29,23 @@ CREATE TABLE IF NOT EXISTS headless_channels (
     twitch_sub_only BOOLEAN DEFAULT FALSE,
     twitch_sub_minimum INTEGER DEFAULT 0,
     patreon_supporters_only BOOLEAN DEFAULT FALSE,
-    patreon_rank_minimum INTEGER DEFAULT 0
+    patreon_rank_minimum INTEGER DEFAULT 0,
+    exceptions TEXT,
+    created TIMESTAMP DEFAULT NOW(),
+    modified TIMESTAMP DEFAULT NOW()
+);
 
+CREATE TABLE IF NOT EXISTS headless_user_private (
+    privateid BIGSERIAL PRIMARY KEY,
+    telegram_user_id BIGINT,
+    status TEXT,
+    created TIMESTAMP DEFAULT NOW(),
+    modified TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS headless_channel_users (
     userid BIGINT REFERENCES headless_users (userid),
-    channelid BIGINT REFERENCES headless_channels (channelid)
+    channelid BIGINT REFERENCES headless_channels (channelid),
+    created TIMESTAMP DEFAULT NOW(),
+    modified TIMESTAMP DEFAULT NOW()
 );
