@@ -147,6 +147,7 @@ class Telegram
             case 'group':
                 return $this->newMessageGroup($update);
             default:
+                $this->sendMessage('DEBUG: Unknown update type, sorry...');
                 return false;
         }
     }
