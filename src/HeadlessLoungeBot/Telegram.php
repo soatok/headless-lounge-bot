@@ -103,7 +103,7 @@ class Telegram
             mkdir(APP_ROOT . '/updates', 0777);
         }
         file_put_contents(
-            APP_ROOT . '/' . time() . '.json',
+            APP_ROOT . '/updates/' . time() . '.json',
             json_encode($update, JSON_PRETTY_PRINT)
         );
         return $this;
