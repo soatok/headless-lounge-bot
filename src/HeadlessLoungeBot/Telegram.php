@@ -83,6 +83,7 @@ class Telegram
     public function processUpdate(array $update): self
     {
         var_dump($update);
+        return $this;
     }
 
     /**
