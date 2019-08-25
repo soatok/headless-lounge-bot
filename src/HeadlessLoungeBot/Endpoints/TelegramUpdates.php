@@ -50,8 +50,11 @@ class TelegramUpdates extends Endpoint
         ?ResponseInterface $response = null,
         array $routerParams = []
     ): ResponseInterface {
-        $response = $this->telegram->processUpdate(
+        $this->telegram->processUpdate(
             $this->getPostBody($request, self::TYPE_JSON)
         );
+        return $this->json([
+            'success'
+        ]);
     }
 }

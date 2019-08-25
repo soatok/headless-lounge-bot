@@ -64,6 +64,14 @@ class Telegram
     }
 
     /**
+     * @return HiddenString
+     */
+    public function getToken(): HiddenString
+    {
+        return $this->token;
+    }
+
+    /**
      * @param int|null $channel
      * @return self
      */
@@ -82,7 +90,13 @@ class Telegram
      */
     public function processUpdate(array $update): self
     {
-        var_dump($update);
+        if (!is_dir(APP_ROOT . '/updates')) {
+            mkdir(APP_ROOT . '/updates', 0777);
+        }
+        file_put_contents(
+            APP_ROOT . '/' . time() . '.json',
+            json_encode($update, JSON_PRETTY_PRINT)
+        );
         return $this;
     }
 
