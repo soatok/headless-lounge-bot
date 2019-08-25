@@ -15,7 +15,7 @@ return function (App $app) {
     $container['homepage'] = function (Container $c) {
         return new HomePage($c);
     };
-    $container['homepage'] = function (Container $c) {
+    $container['telegram-updates'] = function (Container $c) {
         return new TelegramUpdates($c);
     };
 };
