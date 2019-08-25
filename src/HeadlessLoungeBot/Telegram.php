@@ -69,7 +69,7 @@ class Telegram
      */
     public function setupWebook(string $url)
     {
-        return $this->apiRequest('setWebook', ['url' => $url]);
+        return $this->apiRequest('setWebhook', ['url' => $url]);
     }
 
     /**
