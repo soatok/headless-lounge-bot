@@ -99,11 +99,11 @@ class Telegram
      */
     public function processUpdate(array $update): self
     {
-        if (!is_dir(APP_ROOT . '/updates')) {
-            mkdir(APP_ROOT . '/updates', 0777);
+        if (!is_dir(APP_ROOT . '/local/updates')) {
+            mkdir(APP_ROOT . '/local/updates', 0777);
         }
         file_put_contents(
-            APP_ROOT . '/updates/' . time() . '.json',
+            APP_ROOT . '/local/updates/' . time() . '.json',
             json_encode($update, JSON_PRETTY_PRINT)
         );
         return $this;
