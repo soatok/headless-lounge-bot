@@ -76,7 +76,7 @@ trait NewMessageTrait
             $this->sendMessage(
                 'Welcome to the **Headless Lounge.**' . PHP_EOL . PHP_EOL .
                 'Please type `/`',
-                ['reply_to_message_id' => $update['chat']['id']]
+                ['chat_id' => $update['chat']['id']]
             );
             $state['greeted'] = true;
             $this->updateState($state, $update['from']['id']);
