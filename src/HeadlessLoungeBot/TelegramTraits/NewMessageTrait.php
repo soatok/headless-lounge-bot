@@ -32,7 +32,7 @@ trait NewMessageTrait
         if (empty($state)) {
             $this->db->insert('headless_user_private', [
                 'telegram_user_id' => $telegramUserId,
-                'state' => '[]'
+                'status' => '[]'
             ]);
             return [];
         }
@@ -49,7 +49,7 @@ trait NewMessageTrait
         $this->db->beginTransaction();
         $this->db->update(
             'headless_user_private',
-            ['state' => json_encode($state)],
+            ['status' => json_encode($state)],
             ['telegram_user_id' => $telegramUserId]
         );
         return $this->db->commit();
