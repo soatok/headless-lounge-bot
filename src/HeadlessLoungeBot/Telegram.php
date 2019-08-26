@@ -27,9 +27,6 @@ class Telegram
     /** @var EasyDB $db */
     protected $db;
 
-    /** @var int|null $forChannel */
-    protected $forChannel;
-
     /** @var Client $http */
     protected $http;
 
@@ -96,17 +93,6 @@ class Telegram
     public function getToken(): HiddenString
     {
         return $this->token;
-    }
-
-    /**
-     * @param int|null $channel
-     * @return self
-     */
-    public function forChannel(?int $channel = null): self
-    {
-        $self = clone $this;
-        $self->forChannel = $channel;
-        return $self;
     }
 
     /**

@@ -13,7 +13,6 @@ matrix:
     - php: "7.3"
 
 before_install:
-  - mkdir local
   - chmod 0777 local
   - chmod +x tests/travis-install.sh
 

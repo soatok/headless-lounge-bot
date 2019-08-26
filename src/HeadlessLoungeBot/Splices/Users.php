@@ -11,6 +11,41 @@ use Soatok\AnthroKit\Splice;
 class Users extends Splice
 {
     /**
+     * @param string $service
+     * @param int $userId
+     * @return array
+     */
+    public function getGenericIntegration(string $service, int $userId): array
+    {
+        $row = $this->db->row(
+            "SELECT * FROM headless_users_oauth WHERE service = ? AND userid = ?",
+            $service,
+            $userId
+        );
+        if (empty($row)) {
+            return [];
+        }
+        return [];
+    }
+
+    /**
+     * @param int $userId
+     * @return array
+     */
+    public function getPatreonIntegration(int $userId): array
+    {
+        return $this->getGenericIntegration('Patreon', $userId);
+    }
+    /**
+     * @param int $userId
+     * @return array
+     */
+    public function getTwitchIntegration(int $userId): array
+    {
+        return $this->getGenericIntegration('Twitch', $userId);
+    }
+
+    /**
      * @param int $telegramUser
      * @param int|null $twitchUser
      * @param int|null $patreonUser

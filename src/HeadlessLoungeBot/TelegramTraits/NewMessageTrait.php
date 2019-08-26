@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace Soatok\HeadlessLoungeBot\TelegramTraits;
 
 use ParagonIE\EasyDB\EasyDB;
+use Soatok\DholeCrypto\Exceptions\CryptoException;
 use Soatok\HeadlessLoungeBot\Splices\Users;
 use Soatok\HeadlessLoungeBot\Twitch;
 
@@ -73,25 +74,77 @@ trait NewMessageTrait
                 ]);
                 return true;
             }
-            $this->sendMessage(
-                'Welcome to the **Headless Lounge.**' . PHP_EOL . PHP_EOL .
-                'Please type `/`',
-                ['chat_id' => $update['chat']['id']]
-            );
-            $state['greeted'] = true;
-            $this->updateState($state, $update['from']['id']);
-            return true;
             // Do more here
         }
-        $this->sendMessage('DEBUG: State was not empty.', [
-            'chat_id' => $update['chat']['id']
-        ]);
-        return false;
+        switch ($update['text']) {
+            case '/start':
+                $this->commandStart($update['chat']['id']);
+                break;
+            case '/status':
+                $this->commandStatus($update);
+                break;
+        }
+        $state['greeted'] = true;
+        $this->updateState($state, $update['from']['id']);
+        return true;
+    }
+
+    /**
+     * @param int $chatId
+     * @return array
+     */
+    protected function commandStart(int $chatId): array
+    {
+        return $this->sendMessage(
+            'Welcome to the **Headless Lounge.**' . PHP_EOL . PHP_EOL .
+            '`/status`: Authentication status' . PHP_EOL .
+            '`/link Patreon`: Link your Patreon account with your Telegram account.' . PHP_EOL .
+            '`/link Twitch`: Link your Twitch.tv account with your Telegram account.' . PHP_EOL .
+            '`/creategroup`: Create a new group (may require special permissions)',
+            ['chat_id' => $chatId]
+        );
+    }
+
+    /**
+     * @param array $update
+     * @return array
+     */
+    protected function commandStatus(array $update): array
+    {
+        $statusReport = '**Third-Party authentication status...**' . PHP_EOL . PHP_EOL;
+        $user = $this->users->getByTelegramUserId($update['from']['id']);
+        if (empty($user)) {
+            // Ensure row exists next time...
+            $statusReport .= 'Patreon: _Not authenticated_' . PHP_EOL;
+            $statusReport .= 'Twitch: _Not authenticated_' . PHP_EOL;
+            $this->users->upsert($update['from']['id']);
+        } else {
+            $patreon = $this->users->getPatreonIntegration($user['userid']);
+            if (empty($patreon)) {
+                $statusReport .= 'Patreon: _Not authenticated_' . PHP_EOL;
+            } else {
+                $statusReport .= 'Patreon: Unknown'. PHP_EOL;
+            }
+
+            $twitch = $this->users->getTwitchIntegration($user['userid']);
+            if (empty($twitch)) {
+                $statusReport .= 'Twitch: _Not authenticated_' . PHP_EOL;
+            } else {
+                $statusReport .= 'Twitch: Unknown'. PHP_EOL;
+            }
+        }
+
+        return $this->sendMessage(
+            $statusReport,
+            ['chat_id' => $update['from']['id']]
+        );
     }
 
     /**
      * @param array $update
      * @return bool
+     * @throws CryptoException
+     * @throws \SodiumException
      */
     public function newMessageGroup(array $update): bool
     {
@@ -128,6 +181,8 @@ trait NewMessageTrait
      * @param int $chatId
      * @param int $userId
      * @return bool
+     * @throws CryptoException
+     * @throws \SodiumException
      */
     protected function autoKickUser(array $settings, int $chatId, int $userId): bool
     {
@@ -139,6 +194,9 @@ trait NewMessageTrait
             "SELECT * FROM headless_users WHERE userid = ?",
             $settings['channel_user_id']
         );
+        if ($userId === $owner['telegram_user']) {
+            return false;
+        }
 
         if ($settings['twitch_sub_only']) {
             $oauth = $this->db->row(
@@ -149,6 +207,8 @@ trait NewMessageTrait
             if (!empty($oauth)) {
                 $this->twitch->forChannel($oauth['serviceid']);
             }
+            $subs = $this->twitch->getSubscribersForBroadcaster($oauth['serviceid']);
+            // Parse $subs, figure out if new user is a sub or not, kick them otherwise...
         }
 
 
