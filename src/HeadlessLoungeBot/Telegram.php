@@ -117,20 +117,30 @@ class Telegram
      */
     public function processUpdate(array $update): self
     {
-        file_put_contents(APP_ROOT . '/local/last_update_id.txt', $update['update_id']);
-        if (isset($update['message'])) {
-            $this->processNewMessage($update['message']);
+        try {
+            file_put_contents(APP_ROOT . '/local/last_update_id.txt', $update['update_id']);
+            if (isset($update['message'])) {
+                $this->processNewMessage($update['message']);
+            }
+            // else {
+            // Catch all for unknown update types
+            if (!is_dir(APP_ROOT . '/local/updates')) {
+                mkdir(APP_ROOT . '/local/updates', 0777);
+            }
+            file_put_contents(
+                APP_ROOT . '/local/updates/' . time() . '-' . $update['update_id'] . '.json',
+                json_encode($update, JSON_PRETTY_PRINT)
+            );
+            // }
+        } catch (\Throwable $ex) {
+            file_put_contents(
+                APP_ROOT . '/local/updates/' . time() . '-' . $update['update_id'] . '-error.json',
+                json_encode([
+                    'message' => $ex->getMessage(),
+                    'trace' => $ex->getTrace()
+                ], JSON_PRETTY_PRINT)
+            );
         }
-        // else {
-        // Catch all for unknown update types
-        if (!is_dir(APP_ROOT . '/local/updates')) {
-            mkdir(APP_ROOT . '/local/updates', 0777);
-        }
-        file_put_contents(
-            APP_ROOT . '/local/updates/' . time().'-'.$update['update_id'] . '.json',
-            json_encode($update, JSON_PRETTY_PRINT)
-        );
-        // }
         return $this;
     }
 
@@ -171,6 +181,7 @@ class Telegram
         $max_update_id = $update_id;
         foreach ($response['result'] as $row) {
             $max_update_id = max($row['update_id'], $max_update_id);
+            $this->processUpdate($row);
         }
         file_put_contents(APP_ROOT . '/local/last_update_id.txt', $max_update_id);
         return $response['result'];
