@@ -26,7 +26,7 @@ trait NewMessageTrait
     protected function getStateForUser(int $telegramUserId): array
     {
         $state = $this->db->cell(
-            "SELECT * FROM headless_user_private WHERE telegram_user_id = ?",
+            "SELECT status FROM headless_user_private WHERE telegram_user_id = ?",
             $telegramUserId
         );
         if (empty($state)) {
@@ -80,6 +80,7 @@ trait NewMessageTrait
             );
             $state['greeted'] = true;
             $this->updateState($state, $update['from']['id']);
+            return true;
             // Do more here
         }
         $this->sendMessage('DEBUG: State was not empty.', [
