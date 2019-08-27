@@ -170,6 +170,9 @@ trait NewMessageTrait
 
         if (!empty($update['new_chat_members'])) {
             foreach ($update['new_chat_members'] as $new_chat_member) {
+                if ($new_chat_member['id'] === 917008939) {
+                    continue;
+                }
                 // Are they found?
                 $found = $this->db->cell(
                     "SELECT * FROM headless_users WHERE telegram_user = ?",
