@@ -10,6 +10,8 @@ use ParagonIE\EasyDB\EasyDB;
 use ParagonIE\HiddenString\HiddenString;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Container;
+use Soatok\DholeCrypto\Exceptions\CryptoException;
+use Soatok\HeadlessLoungeBot\Splices\Channels;
 use Soatok\HeadlessLoungeBot\Splices\Users;
 use Soatok\HeadlessLoungeBot\TelegramTraits\NewMessageTrait;
 
@@ -23,6 +25,9 @@ class Telegram
 
     /** @var string $botUsername */
     protected $botUsername;
+
+    /** @var Channels $channels */
+    protected $channels;
 
     /** @var EasyDB $db */
     protected $db;
@@ -75,6 +80,9 @@ class Telegram
             $twitch = new Twitch($c, $this->http);
         }
         $this->twitch = $twitch;
+
+        // Splices:
+        $this->channels = new Channels($c);
         $this->users = new Users($c);
     }
 
@@ -133,6 +141,8 @@ class Telegram
     /**
      * @param array $update
      * @return bool
+     * @throws CryptoException
+     * @throws \SodiumException
      */
     protected function processNewMessage(array $update)
     {

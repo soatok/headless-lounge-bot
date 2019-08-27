@@ -4,6 +4,7 @@ namespace Soatok\HeadlessLoungeBot\TelegramTraits;
 
 use ParagonIE\EasyDB\EasyDB;
 use Soatok\DholeCrypto\Exceptions\CryptoException;
+use Soatok\HeadlessLoungeBot\Splices\Channels;
 use Soatok\HeadlessLoungeBot\Splices\Users;
 use Soatok\HeadlessLoungeBot\Twitch;
 
@@ -11,6 +12,7 @@ use Soatok\HeadlessLoungeBot\Twitch;
  * Trait NewMessageTrait
  * @package Soatok\HeadlessLoungeBot\TelegramTraits
  *
+ * @property Channels $channels
  * @property EasyDB $db
  * @property Twitch $twitch
  * @property Users $users
@@ -80,6 +82,9 @@ trait NewMessageTrait
             case '/start':
                 $this->commandStart($update['chat']['id']);
                 break;
+            case '/list':
+                $this->commandList($update['from']['id']);
+                break;
             case '/status':
                 $this->commandStatus($update);
                 break;
@@ -87,6 +92,15 @@ trait NewMessageTrait
         $state['greeted'] = true;
         $this->updateState($state, $update['from']['id']);
         return true;
+    }
+
+    /**
+     * @param int $telegramUserId
+     * @return array
+     */
+    protected function commandList(int $telegramUserId): array
+    {
+        return $this->channels->getTelegramExclusiveAllowedChannels($telegramUserId);
     }
 
     /**
@@ -100,6 +114,7 @@ trait NewMessageTrait
             '`/status`: Authentication status' . PHP_EOL .
             '`/link Patreon`: Link your Patreon account with your Telegram account.' . PHP_EOL .
             '`/link Twitch`: Link your Twitch.tv account with your Telegram account.' . PHP_EOL .
+            '`/list`: Get a list of exclusive groups you can join.' . PHP_EOL .
             '`/creategroup`: Create a new group (may require special permissions)',
             ['chat_id' => $chatId]
         );
@@ -197,6 +212,14 @@ trait NewMessageTrait
         if ($userId === $owner['telegram_user']) {
             return false;
         }
+        $linkedAccounts = $this->db->row(
+            "SELECT * FROM headless_users WHERE telegram_user = ?",
+            $userId
+        );
+        if (empty($linkedAccounts)) {
+            // User does not exist in our system!
+            return true;
+        }
 
         if ($settings['twitch_sub_only']) {
             $oauth = $this->db->row(
@@ -205,11 +228,20 @@ trait NewMessageTrait
                 $owner['userid']
             );
             if (!empty($oauth)) {
-                $this->twitch->forChannel($oauth['serviceid']);
+                $twitch = $this->twitch->forChannel($oauth['serviceid']);
+            } else {
+                $twitch = $this->twitch;
             }
-            $subs = $this->twitch->getSubscribersForBroadcaster($oauth['serviceid']);
+            $subs = $twitch->getSubscribers();
             // Parse $subs, figure out if new user is a sub or not, kick them otherwise...
+            foreach ($subs as $sub) {
+                if ($sub['user_id'] === $linkedAccounts['serviceid']) {
+
+                }
+            }
         }
+
+        // @TODO Patreon-only subs
 
 
         return false;

@@ -9,6 +9,7 @@ use ParagonIE\EasyDB\EasyDB;
 use ParagonIE\HiddenString\HiddenString;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Container;
+use Soatok\DholeCrypto\Exceptions\CryptoException;
 use Soatok\DholeCrypto\Key\SymmetricKey;
 use Soatok\DholeCrypto\Symmetric;
 
@@ -18,6 +19,9 @@ use Soatok\DholeCrypto\Symmetric;
  */
 class Twitch
 {
+    /** @var array $cache */
+    protected static $cacheSubs = [];
+
     /** @var string $clientId */
     protected $clientId;
 
@@ -64,6 +68,16 @@ class Twitch
     }
 
     /**
+     * @param string $username
+     * @return self
+     * @throws \Exception
+     */
+    public function forTwitchUser(string $username): self
+    {
+        return $this->forChannel($this->getBroadcasterId($username));
+    }
+
+    /**
      * @param int|null $channel
      * @return self
      */
@@ -92,6 +106,78 @@ class Twitch
             throw new \Exception('Invalid API response');
         }
         return (int) $id;
+    }
+
+    /**
+     * @return array
+     * @throws CryptoException
+     * @throws \Exception
+     */
+    public function getSubscribers(): array
+    {
+        if (!$this->forChannel) {
+            return [];
+        }
+        // Was it cached this request already?
+        if (empty(self::$cacheSubs[$this->forChannel])) {
+            $user_id = $this->db->cell(
+                "SELECT userid FROM headless_users_oauth 
+                 WHERE service = 'Twitch' AND serviceid = ?",
+                 $this->forChannel
+            );
+            if (empty($user_id)) {
+                return [];
+            }
+
+            $cached = $this->db->row(
+                "SELECT * FROM headless_user_service_cache
+             WHERE service = 'Twitch' AND serviceid = ?",
+                $this->forChannel
+            );
+
+            // Check cache:
+            if (!empty($cached)) {
+                $cutoff = (new \DateTime($cached['modified']))
+                    ->add(new \DateInterval('PT01H'));
+                $now = new \DateTime();
+                if ($cutoff > $now) {
+                    self::$cacheSubs[$this->forChannel] = (array) json_decode(
+                        $cached['cachedata'],
+                        true
+                    );
+                    return self::$cacheSubs[$this->forChannel];
+                }
+                // Expired:
+                $this->db->delete(
+                    'headless_user_service_cache',
+                    ['cacheid' => $cached['cacheid']]
+                );
+                $cached = [];
+            }
+
+            $subs = [];
+            foreach ($this->getSubscribersForBroadcaster($this->forChannel) as $sub) {
+                $subs[] = [
+                    'user_id' => $sub['user_id'],
+                    'user_name' => $sub['user_name'],
+                    'is_gift' => $sub['is_gift'],
+                    'tier' => $sub['tier'] / 1000
+                ];
+            }
+
+            $this->db->insert(
+                'headless_user_service_cache',
+                [
+                    'service' => 'Twitch',
+                    'serviceid' => $this->forChannel,
+                    'userid' => $user_id,
+                    'cachedata' => json_encode($subs)
+                ]
+            );
+
+            self::$cacheSubs[$this->forChannel] = $subs;
+        }
+        return self::$cacheSubs[$this->forChannel];
     }
 
     /**
@@ -139,7 +225,7 @@ class Twitch
             return false;
         }
         $row = $this->db->row(
-            "SELECT * FROM headless_channel_oauth WHERE channelid = ? AND service = 'Twitch'",
+            "SELECT * FROM headless_users_oauth WHERE service = 'Twitch' AND serviceid = ?",
             $this->forChannel
         );
         $response = $this->parseJson(
@@ -155,11 +241,11 @@ class Twitch
         );
 
         $this->db->beginTransaction();
-        $this->db->update('headless_channel_oauth', [
-            'refresh_token' => Symmetric::decrypt($response['refresh_token'], $this->key),
-            'access_token' => Symmetric::decrypt($response['access_token'], $this->key)
+        $this->db->update('headless_users_oauth', [
+            'refresh_token' => Symmetric::encrypt($response['refresh_token'], $this->key),
+            'access_token' => Symmetric::encrypt($response['access_token'], $this->key)
         ], [
-            'channelid' => $row['channelid']
+            'oauthid' => $row['oauthid']
         ]);
         return $this->db->commit();
     }
@@ -175,7 +261,7 @@ class Twitch
             return [];
         }
         $row = $this->db->row(
-            "SELECT * FROM headless_channel_oauth WHERE channelid = ? AND service = 'Twitch'",
+            "SELECT * FROM headless_users_oauth WHERE service = 'Twitch' AND serviceid = ?",
             $this->forChannel
         );
         if (empty($row)) {
