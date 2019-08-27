@@ -115,6 +115,9 @@ class Telegram
      */
     public function processUpdate(array $update): self
     {
+        if ($update['from']['id'] === $this->botUserId) {
+            return $this;
+        }
         try {
             file_put_contents(APP_ROOT . '/local/last_update_id.txt', $update['update_id']);
             if (isset($update['message'])) {
