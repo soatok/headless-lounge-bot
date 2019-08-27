@@ -26,6 +26,9 @@ class Telegram
     /** @var string $botUsername */
     protected $botUsername;
 
+    /** @var int $botUserId */
+    protected $botUserId;
+
     /** @var Channels $channels */
     protected $channels;
 
@@ -66,6 +69,7 @@ class Telegram
         /** @var string $botName */
         $botName = $c['settings']['tg-bot-username'];
         $this->botUsername = $botName;
+        $this->botUserId = $c['settings']['tg-bot-user-id'];
         $this->db = $c['db'];
         $this->token = $token;
         if (!$http) {
@@ -147,6 +151,9 @@ class Telegram
     protected function processNewMessage(array $update)
     {
         $type = $update['chat']['type'];
+        if ($update['from']['id'] === $this->botUserId) {
+            return false;
+        }
         switch ($type) {
             case 'private':
                 return $this->newMessagePrivate($update);

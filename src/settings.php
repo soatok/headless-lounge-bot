@@ -11,6 +11,10 @@ $botUsername = '';
 if (file_exists(APP_ROOT . '/local/telegram-username.php')) {
     $botUsername = include APP_ROOT . '/local/telegram-username.php';
 }
+$botUserId = '';
+if (file_exists(APP_ROOT . '/local/telegram-user-id.php')) {
+    $botUserId = include APP_ROOT . '/local/telegram-user-id.php';
+}
 $twitch = [
     'client-id' => '',
     'client-secret' => ''
@@ -43,6 +47,7 @@ $default = [
 
         'telegram' => new HiddenString($telegram),
         'tg-bot-username' => $botUsername,
+        'tg-bot-user-id' => $botUserId,
         'twitch' => $twitch,
     ],
 ];

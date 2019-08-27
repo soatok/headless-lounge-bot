@@ -170,7 +170,7 @@ trait NewMessageTrait
 
         if (!empty($update['new_chat_members'])) {
             foreach ($update['new_chat_members'] as $new_chat_member) {
-                if ($new_chat_member['id'] === 917008939) {
+                if ($new_chat_member['id'] === $this->botUserId) {
                     continue;
                 }
                 // Are they found?
@@ -212,7 +212,7 @@ trait NewMessageTrait
             "SELECT * FROM headless_users WHERE userid = ?",
             $settings['channel_user_id']
         );
-        if ($userId === $owner['telegram_user']) {
+        if ($userId === $owner['telegram_user'] || $userId === $this->botUserId) {
             return false;
         }
         $linkedAccounts = $this->db->row(
