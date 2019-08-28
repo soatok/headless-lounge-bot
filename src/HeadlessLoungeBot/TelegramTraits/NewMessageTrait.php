@@ -195,6 +195,19 @@ trait NewMessageTrait
     }
 
     /**
+     * Should we auto-kick this user? (TRUE = Kick, FALSE = Do not)
+     *
+     * - If they are not associated with an account: Kick them!
+     * - If they are in the "exceptions" list (i.e. they were whitelisted by an
+     *   admin): Do not kick
+     * - If this is a Twitch subscriber only group...
+     *   - If they are a subscriber, and >= the minimum tier: Do not kick
+     * - If this is a Patreon supporter only group...
+     *   - If they are a Patreon supporter, and >= the minimum tier: Do not kick
+     * - If all else fails:
+     *   - If this room has no restrictions, do not kick
+     *   - If this room has restrictions, kick
+     *
      * @param array $settings
      * @param int $chatId
      * @param int $userId
@@ -224,6 +237,8 @@ trait NewMessageTrait
             return true;
         }
 
+        // This affects our final fallback behavior.
+        $autoKick = $settings['twitch_sub_only'] || $settings['patreon_supporters_only'];
         if ($settings['twitch_sub_only']) {
             $oauth = $this->db->row(
                 "SELECT * FROM headless_users_oauth 
@@ -239,15 +254,20 @@ trait NewMessageTrait
             // Parse $subs, figure out if new user is a sub or not, kick them otherwise...
             foreach ($subs as $sub) {
                 if ($sub['user_id'] === $linkedAccounts['serviceid']) {
-
+                    // We found a match!
+                    if ($settings['twitch_sub_minimum'] > 0) {
+                        // Auto-kick if tier is too low:
+                        return $sub['tier'] < $settings['twitch_sub_minimum'];
+                    }
+                    // Don't autokick
+                    return false;
                 }
             }
         }
 
         // @TODO Patreon-only subs
 
-
-        return false;
+        return $autoKick;
     }
 
     /**
