@@ -26,12 +26,15 @@ if (is_readable(APP_ROOT . '/local/phpunit.php')) {
 $app = new \Slim\App($settings);
 
 // Set up dependencies
-require APP_ROOT . '/src/dependencies.php';
+$dependencies = require APP_ROOT . '/src/dependencies.php';
+$dependencies($app);
 
 // Register middleware
-require APP_ROOT . '/src/middleware.php';
+$middleware = require APP_ROOT . '/src/middleware.php';
+$middleware($app);
 
 // Register routes
-require APP_ROOT . '/src/routes.php';
+$routes = require APP_ROOT . '/src/routes.php';
+$routes($app);
 
 \Soatok\HeadlessLoungeBot\TestHelper::injectApp($app);

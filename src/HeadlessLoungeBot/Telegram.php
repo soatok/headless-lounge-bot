@@ -70,7 +70,7 @@ class Telegram
         $botName = $c['settings']['tg-bot-username'];
         $this->botUsername = $botName;
         $this->botUserId = $c['settings']['tg-bot-user-id'];
-        $this->db = $c['db'];
+        $this->db = $c->get('db');
         $this->token = $token;
         if (!$http) {
             $http = new Client([
