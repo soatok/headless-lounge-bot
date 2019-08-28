@@ -9,6 +9,7 @@ use Soatok\HeadlessLoungeBot\TestHelper;
 class TelegramTest extends TestCase
 {
     /**
+     * @throws \Interop\Container\Exception\ContainerException
      * @throws \ParagonIE\Certainty\Exception\CertaintyException
      * @throws \SodiumException
      */
