@@ -158,7 +158,8 @@ trait NewMessageTrait
         $channels = $this->channels->getTelegramExclusiveAllowedChannels($telegramUserId);
         $message = '**Channels:**' . PHP_EOL;
         foreach ($channels as $chan) {
-            $message .= '`' . json_encode($chan) . '`' . PHP_EOL;
+            $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
+            $message .= '`' . json_encode($meta) . '`' . PHP_EOL;
         }
         return $this->sendMessage($message, ['chat_id' => $chatId]);
     }
