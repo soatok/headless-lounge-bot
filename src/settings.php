@@ -44,8 +44,8 @@ $default = [
         'addContentLengthHeader' => false, // Allow the web server to send the content-length header
 
         'base-url' => 'https://headless.soatok.com',
-
-            'encryption-key' => $key,
+        'bot-debug' => false,
+        'encryption-key' => $key,
 
         'database' => [
             'dsn' => 'pgsql:host=localhost;dbname=headlesslounge',

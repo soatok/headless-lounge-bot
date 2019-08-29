@@ -35,6 +35,9 @@ class Telegram
     /** @var Channels $channels */
     protected $channels;
 
+    /** @var bool $debug */
+    protected $debug = false;
+
     /** @var EasyDB $db */
     protected $db;
 
@@ -75,6 +78,7 @@ class Telegram
         $this->botUsername = $botName;
         $this->botUserId = $c['settings']['tg-bot-user-id'];
         $this->db = $c->get('db');
+        $this->debug = $c['settings']['bot-debug'];
         $this->token = $token;
         if (!$http) {
             $http = new Client([
@@ -132,10 +136,12 @@ class Telegram
             if (!is_dir(APP_ROOT . '/local/updates')) {
                 mkdir(APP_ROOT . '/local/updates', 0777);
             }
-            file_put_contents(
-                APP_ROOT . '/local/updates/' . time() . '-' . $update['update_id'] . '.json',
-                json_encode($update, JSON_PRETTY_PRINT)
-            );
+            if ($this->debug) {
+                file_put_contents(
+                    APP_ROOT . '/local/updates/' . time() . '-' . $update['update_id'] . '.json',
+                    json_encode($update, JSON_PRETTY_PRINT)
+                );
+            }
             // }
         } catch (\Throwable $ex) {
             file_put_contents(
