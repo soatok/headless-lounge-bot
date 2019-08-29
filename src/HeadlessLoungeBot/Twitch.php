@@ -109,6 +109,28 @@ class Twitch
     }
 
     /**
+     * @return bool
+     */
+    public function clearCache(): bool
+    {
+        if (!$this->forChannel) {
+            return false;
+        }
+        if (isset(self::$cacheSubs[$this->forChannel])) {
+            unset(self::$cacheSubs[$this->forChannel]);
+        }
+        $this->db->beginTransaction();
+        $this->db->delete(
+            'headless_user_service_cache',
+            [
+                'service' => 'Twitch',
+                'serviceid' => $this->forChannel,
+            ]
+        );
+        return $this->db->commit();
+    }
+
+    /**
      * @return array
      * @throws CryptoException
      * @throws \Exception
