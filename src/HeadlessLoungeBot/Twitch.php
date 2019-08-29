@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace Soatok\HeadlessLoungeBot;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ServerException;
 use ParagonIE\Certainty\Exception\CertaintyException;
 use ParagonIE\Certainty\RemoteFetch;
 use ParagonIE\EasyDB\EasyDB;
@@ -178,13 +179,17 @@ class Twitch
             }
 
             $subs = [];
-            foreach ($this->getSubscribersForBroadcaster($this->forChannel) as $sub) {
-                $subs[] = [
-                    'user_id' => $sub['user_id'],
-                    'user_name' => $sub['user_name'],
-                    'is_gift' => $sub['is_gift'],
-                    'tier' => $sub['tier'] / 1000
-                ];
+            try {
+                $subResp = $this->getSubscribersForBroadcaster($this->forChannel);
+                foreach ($subResp as $sub) {
+                    $subs[] = [
+                        'user_id' => $sub['user_id'],
+                        'user_name' => $sub['user_name'],
+                        'is_gift' => $sub['is_gift'],
+                        'tier' => $sub['tier'] / 1000
+                    ];
+                }
+            } catch (ServerException $ex) {
             }
 
             $this->db->insert(
