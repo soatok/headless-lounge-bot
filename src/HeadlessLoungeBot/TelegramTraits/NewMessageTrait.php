@@ -388,6 +388,8 @@ trait NewMessageTrait
             if (!empty($m[3])) {
                 $fields['twitch_sub_minimum'] = (int) $m[3];
                 $message .= ' (Tier ' . $m[3] . '+)';
+            } else {
+                $fields['twitch_sub_minimum'] = 0;
             }
             $fields['twitch_sub_only'] = true;
         } else if (strtolower($m[2]) === 'patreon') {
@@ -403,6 +405,8 @@ trait NewMessageTrait
             if (!empty($m[3])) {
                 $fields['patreon_rank_minimum'] = (int) $m[3];
                 $message .= ' ($' . $m[3] . '/month or more)';
+            } else {
+                $fields['patreon_rank_minimum'] = 0;
             }
             $fields['patreon_supporters_only'] = true;
         }
