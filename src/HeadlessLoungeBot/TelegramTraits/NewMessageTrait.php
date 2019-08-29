@@ -63,6 +63,7 @@ trait NewMessageTrait
     /**
      * @param array $update
      * @return bool
+     * @throws \Exception
      */
     public function newMessagePrivate(array $update): bool
     {
@@ -83,7 +84,7 @@ trait NewMessageTrait
                 $this->commandStart($update['chat']['id']);
                 break;
             case '/list':
-                $this->commandList($update['from']['id']);
+                $this->commandList($update['from']['id'], $update['chat']['id']);
                 break;
             case '/link twitch':
                 $this->commandLink($update, $user, 'Twitch');
@@ -149,11 +150,17 @@ trait NewMessageTrait
 
     /**
      * @param int $telegramUserId
+     * @param int $chatId
      * @return array
      */
-    protected function commandList(int $telegramUserId): array
+    protected function commandList(int $telegramUserId, int $chatId): array
     {
-        return $this->channels->getTelegramExclusiveAllowedChannels($telegramUserId);
+        $channels = $this->channels->getTelegramExclusiveAllowedChannels($telegramUserId);
+        $message = '**Channels:**' . PHP_EOL;
+        foreach ($channels as $chan) {
+            $message .= '`' . json_encode($chan) . '`' . PHP_EOL;
+        }
+        return $this->sendMessage($message, ['chat_id' => $chatId]);
     }
 
     /**
@@ -167,8 +174,10 @@ trait NewMessageTrait
             '`/status`: Authentication status' . PHP_EOL .
             '`/link Patreon`: Link your Patreon account with your Telegram account.' . PHP_EOL .
             '`/link Twitch`: Link your Twitch.tv account with your Telegram account.' . PHP_EOL .
-            '`/list`: Get a list of exclusive groups you can join.' . PHP_EOL .
-            '`/creategroup`: Create a new group (may require special permissions)',
+            '`/list`: Get a list of exclusive groups you can join.' . PHP_EOL . PHP_EOL .
+            'To create a group, invite me into your group, ' .
+            'make me an administrator, ' .
+            'then say `/enforce twitch` or `/enforce patreon`.',
             ['chat_id' => $chatId]
         );
     }
@@ -363,7 +372,7 @@ trait NewMessageTrait
         }
         if ($this->db->commit()) {
             $this->sendMessage(
-                'Understood. Only ' . $message . ' will be allowed in this group.',
+                'Understood. ' . $message . ' will be allowed in this group.',
                 ['chat_id' => $update['chat']['id']]
             );
             return true;
@@ -409,10 +418,12 @@ trait NewMessageTrait
                 $new_chat_member['id']
             );
             if (!$found) {
+                /*
                 $this->sendMessage(
                     'This user is not known to Headless Lounge Bot.',
                     ['chat_id' => $update['chat']['id']]
                 );
+                */
                 $this->kickUser($update['chat']['id'], $new_chat_member['id']);
             } elseif ($this->autoKickUser(
                 $chat,
@@ -424,6 +435,11 @@ trait NewMessageTrait
                     ['chat_id' => $update['chat']['id']]
                 );
                 $this->kickUser($update['chat']['id'], $new_chat_member['id']);
+            } else {
+                $this->sendMessage(
+                    'Welcome, Twitch subscriber! :3',
+                    ['chat_id' => $update['chat']['id']]
+                );
             }
             $state = $this->getStateForUser($new_chat_member['id']);
         }
@@ -470,10 +486,12 @@ trait NewMessageTrait
         );
         if (empty($linkedAccounts)) {
             // User does not exist in our system!
+            /*
             $this->sendMessage(
                 'This user is not known to Headless Lounge Bot.',
                 ['chat_id' => $chatId]
             );
+            */
             return true;
         }
 
@@ -515,10 +533,6 @@ trait NewMessageTrait
                 }
             }
         }
-        $this->sendMessage(
-            'This user is not subscribed to the creator on Twitch.',
-            ['chat_id' => $chatId]
-        );
 
         // @TODO Patreon-only subs
 
