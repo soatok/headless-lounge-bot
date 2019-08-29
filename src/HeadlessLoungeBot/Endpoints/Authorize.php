@@ -115,6 +115,7 @@ class Authorize extends Endpoint
             return $this->redirect('/');
         }
 
+        /** @var array $user */
         $user = (new PatreonAPI(new HiddenString($tokens['access_token'])))
             ->fetch_user();
         if (empty($user['data']['id'])) {
