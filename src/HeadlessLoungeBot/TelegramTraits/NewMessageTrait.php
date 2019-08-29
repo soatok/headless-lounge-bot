@@ -273,6 +273,10 @@ trait NewMessageTrait
 
         if (!$isAdmin) {
             // You are NOT a group admin.
+            $this->sendMessage(
+                'You are not a group administrator.',
+                ['chat_id' => $update['chat']['id']]
+            );
             return false;
         }
 
