@@ -197,7 +197,7 @@ trait NewMessageTrait
             if ($meta['ok'] && !empty($meta['result'])) {
                 $res = $meta['result'];
                 if (isset($res['username'])) {
-                    $message .= '- ' . addslashes($res['title']) .
+                    $message .= '- ' . $res['title'] .
                         ' (@' . $res['username'] . ')' . PHP_EOL;
                 } else {
                     if (empty($res['invite_link'])) {
@@ -211,11 +211,11 @@ trait NewMessageTrait
                         }
                     }
                     if (empty($res['invite_link'])) {
-                        $message .= '- ' . addslashes($res['title']) .
+                        $message .= '- ' . $res['title'] .
                             ' (' . $res['invite_link'] . ')' . PHP_EOL;
                         continue;
                     } else {
-                        $message .= '- ' . addslashes($res['title']) .
+                        $message .= '- ' . $res['title'] .
                             ' (_No invite link available_)' . PHP_EOL;
                     }
                 }
