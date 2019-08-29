@@ -192,7 +192,7 @@ trait NewMessageTrait
             try {
                 $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
             } catch (BadResponseException $ex) {
-                continue;
+                $meta['ok'] = false;
             }
             if ($meta['ok'] && !empty($meta['result'])) {
                 $res = $meta['result'];
@@ -203,17 +203,19 @@ trait NewMessageTrait
                     if (empty($res['invite_link'])) {
                         try {
                             $this->apiRequest('exportChatInviteLink', ['chat_id' => $chan]);
+                            $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
+                            $res = $meta['result'];
                         } catch (BadResponseException $ex) {
-                            continue;
                         }
-                        $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
-                        $res = $meta['result'];
                     }
                     if (empty($res['invite_link'])) {
+                        $message .= '- ' . $res['title'] .
+                            ' (' . $res['invite_link'] . ')' . PHP_EOL;
                         continue;
+                    } else {
+                        $message .= '- ' . $res['title'] .
+                            ' (_No invite link available_)' . PHP_EOL;
                     }
-                    $message .= '- ' . $res['title'] .
-                        ' (' . $res['invite_link'] . ')' . PHP_EOL;
                 }
             }
         }
