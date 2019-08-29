@@ -168,30 +168,61 @@ trait NewMessageTrait
             $update['chat']['id']
         );
 
+        // Process new members: Are they allowed?
         if (!empty($update['new_chat_members'])) {
-            foreach ($update['new_chat_members'] as $new_chat_member) {
-                if ($new_chat_member['id'] === $this->botUserId) {
-                    continue;
-                }
-                // Are they found?
-                $found = $this->db->cell(
-                    "SELECT * FROM headless_users WHERE telegram_user = ?",
-                    $new_chat_member['id']
-                );
-                if (!$found) {
-                    $this->kickUser($update['chat']['id'], $new_chat_member['id']);
-                } elseif ($this->autoKickUser(
-                    $chat,
-                    $update['chat']['id'],
-                    $new_chat_member['id']
-                )) {
-                    $this->kickUser($update['chat']['id'], $new_chat_member['id']);
-                }
-                $state = $this->getStateForUser($new_chat_member['id']);
-            }
-            return true;
+            return $this->handleNewMembers($chat, $update);
         }
+        if (!empty($update['text'])) {
+            return $this->handleGroupMessage($chat, $update);
+        }
+
         return false;
+    }
+
+    /**
+     * @param array $chat
+     * @param array $update
+     * @return bool
+     */
+    protected function handleGroupMessage(array $chat, array $update): bool
+    {
+        if (!preg_match('#^/([A-Za-z0-9_]+)[\s]+?([^\s]+)?#', $update['text'], $m)) {
+            return false;
+        }
+        $administrators = $this->getAdministrators($update['chat']['id']);
+        $isAdmin = !empty($update['chat']['all_members_are_administrators']);
+    }
+
+    /**
+     * @param array $chat
+     * @param array $update
+     * @return bool
+     * @throws CryptoException
+     * @throws \SodiumException
+     */
+    protected function handleNewMembers(array $chat, array $update): bool
+    {
+        foreach ($update['new_chat_members'] as $new_chat_member) {
+            if ($new_chat_member['id'] === $this->botUserId) {
+                continue;
+            }
+            // Are they found?
+            $found = $this->db->cell(
+                "SELECT count(*) FROM headless_users WHERE telegram_user = ?",
+                $new_chat_member['id']
+            );
+            if (!$found) {
+                $this->kickUser($update['chat']['id'], $new_chat_member['id']);
+            } elseif ($this->autoKickUser(
+                $chat,
+                $update['chat']['id'],
+                $new_chat_member['id']
+            )) {
+                $this->kickUser($update['chat']['id'], $new_chat_member['id']);
+            }
+            $state = $this->getStateForUser($new_chat_member['id']);
+        }
+        return true;
     }
 
     /**

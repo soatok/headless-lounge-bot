@@ -171,6 +171,22 @@ class Telegram
     }
 
     /**
+     * @param int $channel
+     * @return array
+     */
+    protected function getAdministrators(int $channel): array
+    {
+        $admins = $this->apiRequest('getChatAdministrators', [
+            'chat_id' => $channel
+        ]);
+        file_put_contents(
+            APP_ROOT . '/local/updates/admin-' . time() . '.json',
+            json_encode($admins, JSON_PRETTY_PRINT)
+        );
+        return $admins;
+    }
+
+    /**
      * Implements the getUpdates strategy for getting updates from Telegram.
      *
      * @return array
