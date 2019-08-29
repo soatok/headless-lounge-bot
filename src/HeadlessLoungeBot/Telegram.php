@@ -161,6 +161,7 @@ class Telegram
             case 'private':
                 return $this->newMessagePrivate($update);
             case 'group':
+            case 'supergroup':
                 return $this->newMessageGroup($update);
             default:
                 $this->sendMessage('DEBUG: Unknown update type, sorry...', [
