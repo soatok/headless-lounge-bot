@@ -2,12 +2,17 @@
 declare(strict_types=1);
 namespace Soatok\HeadlessLoungeBot\Endpoints;
 
+use GuzzleHttp\Client;
 use Interop\Container\Exception\ContainerException;
 use ParagonIE\Certainty\Exception\CertaintyException;
+use ParagonIE\HiddenString\HiddenString;
+use Patreon\API as PatreonAPI;
+use Patreon\OAuth as PatreonOAuth;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Container;
 use Soatok\AnthroKit\Endpoint;
+use Soatok\DholeCrypto\Exceptions\CryptoException;
 use Soatok\DholeCrypto\Key\SymmetricKey;
 use Soatok\DholeCrypto\Symmetric;
 use Soatok\HeadlessLoungeBot\Telegram;
@@ -63,6 +68,14 @@ class Authorize extends Endpoint
 
     /**
      * @return ResponseInterface
+     * @throws ContainerException
+     * @throws CryptoException
+     * @throws \Patreon\Exceptions\APIException
+     * @throws \Patreon\Exceptions\CurlException
+     * @throws \SodiumException
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
      */
     protected function authorizePatreon(): ResponseInterface
     {
@@ -78,37 +91,117 @@ class Authorize extends Endpoint
             // Error:
             return $this->redirect('/');
         }
-        $oauth = Symmetric::decrypt($state['oauth'], $this->encKey);
+        $oauth = json_decode(
+            Symmetric::decrypt($state['oauth'], $this->encKey)->getString(),
+            true
+        );
+        if ($this->checkExpired($oauth)) {
+            return $this->redirect('/');
+        }
+        if (!\hash_equals('Patreon', $oauth['service'])) {
+            return $this->redirect('/');
+        }
 
-        return $this->json($oauth);
+        $patreonOauth = new PatreonOAuth(
+            $this->oauthSettings['patreon']['client-id'],
+            $this->oauthSettings['patreon']['client-secret']
+        );
+        // Get the refresh and access tokens...
+        $tokens = $patreonOauth->get_tokens(
+            $_GET['code'],
+            $this->baseUrl . '/authorize/patreon'
+        );
+
+        $user = (new PatreonAPI(new HiddenString($tokens['access_token'])))
+            ->fetch_user();
+        if (empty($user['data']['id'])) {
+            return $this->redirect('/#invalid-patreon-account');
+        }
+        $tokens['account_id'] = (int) $user['data']['id'];
+
+        try {
+            if ($this->users->linkPatreon($tokens, $oauth)) {
+                return $this->view('link-success.twig');
+            }
+        } catch (\Throwable $ex) {
+        }
+        return $this->redirect('/');
     }
 
     /**
      * @return ResponseInterface
      * @throws ContainerException
+     * @throws CryptoException
+     * @throws \SodiumException
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\RuntimeError
      * @throws \Twig\Error\SyntaxError
      */
     protected function authorizeTwitch(): ResponseInterface
     {
-        if (empty($_GET['access_token']) || empty($_GET['state'])) {
-            /*
-             * Let's not mince words: Twitch's API is stupid.
-             *
-             * Instead of passing this back as a request parameter, they pass it
-             * as a URL fragment, so we have to fetch document.location.hash from
-             * JavaScript and pass it in a follow-up request.
-             *
-             * Why? Because Twitch wants us to open our doors to Open Redirect
-             * vulnerabilities apparently!
-             *
-             * So let's just kludge this...
-             */
-            return $this->view('twitch.twig');
+        if (empty($_GET['code']) || empty($_GET['state'])) {
+            return $this->redirect('/');
         }
-        $oauth = Symmetric::decrypt($_GET['state'], $this->encKey);
-        return $this->json($oauth);
+        $oauth = json_decode(
+            Symmetric::decrypt($_GET['state'], $this->encKey)->getString(),
+            true
+        );
+        if ($this->checkExpired($oauth)) {
+            return $this->redirect('/');
+        }
+        if (!\hash_equals('Twitch', $oauth['service'])) {
+            return $this->redirect('/');
+        }
+        $http = new Client();
+
+        // Get the refresh and access tokens...
+        $query = http_build_query([
+            'client_id' => $this->oauthSettings['twitch']['client-id'],
+            'client_secret' => $this->oauthSettings['twitch']['client-secret'],
+            'code' => $_GET['code'],
+            'grant_type' => 'authorization_code',
+            'redirect_uri' => $this->baseUrl . '/authorize/twitch'
+        ]);
+        $response = $http->post('https://id.twitch.tv/oauth2/token?' . $query);
+        $tokens = json_decode($response->getBody()->getContents(), true);
+
+        // Get the user ID:
+        $response = $http->get('https://api.twitch.tv/helix/users', [
+            'headers' => [
+                'Authorization' => 'Bearer' . $tokens['access_token']
+            ]
+        ]);
+        $ident = json_decode($response->getBody()->getContents(), true);
+        if (empty($ident['data'][0]['id'])) {
+            return $this->redirect('/#invalid-twitch-account');
+        }
+        $tokens['account_id'] = $ident['data'][0]['id'];
+
+        try {
+            if ($this->users->linkTwitch($tokens, $oauth)) {
+                return $this->view('link-success.twig');
+            }
+        } catch (\Throwable $ex) {
+        }
+        return $this->redirect('/');
+    }
+
+    /**
+     * @param array $oauth
+     * @return bool
+     */
+    protected function checkExpired(array $oauth): bool
+    {
+        if (empty($exp['expires'])) {
+            return true;
+        }
+        try {
+            $exp = new \DateTime($oauth['expires']);
+            $now = new \DateTime();
+        } catch (\Exception $ex) {
+            return true;
+        }
+        return $exp <= $now;
     }
 
     /**
@@ -117,6 +210,10 @@ class Authorize extends Endpoint
      * @param array $routerParams
      * @return ResponseInterface
      * @throws ContainerException
+     * @throws CryptoException
+     * @throws \Patreon\Exceptions\APIException
+     * @throws \Patreon\Exceptions\CurlException
+     * @throws \SodiumException
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\RuntimeError
      * @throws \Twig\Error\SyntaxError

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace Soatok\HeadlessLoungeBot\Splices;
 
+use ParagonIE\ConstantTime\Base32;
 use Soatok\AnthroKit\Splice;
 use Soatok\HeadlessLoungeBot\Exceptions\UserNotFoundException;
 
@@ -69,6 +70,91 @@ class Users extends Splice
             'twitch_user' => $twitchUser,
             'patreon_user' => $patreonUser
         ]);
+        return $this->db->commit();
+    }
+    /**
+     * @param array $tokens
+     * @param array $oauth
+     * @return bool
+     * @throws \Exception
+     */
+    public function linkPatreon(array $tokens, array $oauth): bool
+    {
+        $this->db->beginTransaction();
+        try {
+            $expires = (new \DateTime('now'))
+                ->add(new \DateInterval('PT' . $tokens['expires_in'] . 'S'))
+                ->format(\DateTime::ATOM);
+        } catch (\Exception $ex) {
+            $expires = date(DATE_ATOM);
+        }
+        $this->db->update(
+            'headless_users_oauth',
+            [
+                'serviceid' => $tokens['account_id'],
+                'refresh_token' => $tokens['refresh_token'],
+                'access_token' => $tokens['access_token'],
+                'access_expires' => $expires,
+                'scope' => json_encode($tokens['scope'] ?? ''),
+                'url_token' => Base32::encodeUpperUnpadded(random_bytes(30))
+            ],
+            [
+                'userid' => $oauth['userid'],
+                'service' => 'Patreon'
+            ]
+        );
+        $this->db->update(
+            'headless_users',
+            [
+                'patreon_user' => $tokens['account_id']
+            ],
+            [
+                'userid' => $oauth['userid']
+            ]
+        );
+        return $this->db->commit();
+    }
+
+    /**
+     * @param array $tokens
+     * @param array $oauth
+     * @return bool
+     * @throws \Exception
+     */
+    public function linkTwitch(array $tokens, array $oauth): bool
+    {
+        $this->db->beginTransaction();
+        try {
+            $expires = (new \DateTime('now'))
+                ->add(new \DateInterval('PT' . $tokens['expires_in'] . 'S'))
+                ->format(\DateTime::ATOM);
+        } catch (\Exception $ex) {
+            $expires = date(DATE_ATOM);
+        }
+        $this->db->update(
+            'headless_users_oauth',
+            [
+                'serviceid' => $tokens['account_id'],
+                'refresh_token' => $tokens['refresh_token'],
+                'access_token' => $tokens['access_token'],
+                'access_expires' => $expires,
+                'scope' => json_encode($tokens['scope'] ?? ''),
+                'url_token' => Base32::encodeUpperUnpadded(random_bytes(30))
+            ],
+            [
+                'userid' => $oauth['userid'],
+                'service' => 'Twitch'
+            ]
+        );
+        $this->db->update(
+            'headless_users',
+            [
+                'twitch_user' => $tokens['account_id']
+            ],
+            [
+                'userid' => $oauth['userid']
+            ]
+        );
         return $this->db->commit();
     }
 

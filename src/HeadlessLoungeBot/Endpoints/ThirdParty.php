@@ -86,7 +86,7 @@ class ThirdParty extends Endpoint
         $url = 'https://id.twitch.tv/oauth2/authorize?' . http_build_query([
             'client_id' => $this->oauthSettings['twitch']['client-id'],
             'redirect_uri' => $this->baseUrl . '/authorize/twitch',
-            'response_type' => 'token',
+            'response_type' => 'code',
             'scope' => implode(' ', [
                 'channel_check_subscription',
                 'channel_subscriptions',
