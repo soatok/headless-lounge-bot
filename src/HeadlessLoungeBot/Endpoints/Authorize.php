@@ -119,11 +119,13 @@ class Authorize extends Endpoint
         }
         $tokens['account_id'] = (int) $user['data']['id'];
 
+        $success = false;
         try {
-            if ($this->users->linkPatreon($tokens, $oauth)) {
-                return $this->view('link-success.twig');
-            }
+            $success = $this->users->linkPatreon($tokens, $oauth);
         } catch (\Throwable $ex) {
+        }
+        if ($success) {
+            return $this->view('link-success.twig');
         }
         return $this->redirect('/');
     }
@@ -178,11 +180,13 @@ class Authorize extends Endpoint
         }
         $tokens['account_id'] = $ident['data'][0]['id'];
 
+        $success = false;
         try {
-            if ($this->users->linkTwitch($tokens, $oauth)) {
-                return $this->view('link-success.twig');
-            }
+            $success = $this->users->linkTwitch($tokens, $oauth);
         } catch (\Throwable $ex) {
+        }
+        if ($success) {
+            return $this->view('link-success.twig');
         }
         return $this->redirect('/');
     }
