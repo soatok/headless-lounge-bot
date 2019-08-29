@@ -408,12 +408,20 @@ trait NewMessageTrait
                 $new_chat_member['id']
             );
             if (!$found) {
+                $this->sendMessage(
+                    'This user is not known to Headless Lounge Bot.',
+                    ['chat_id' => $update['chat']['id']]
+                );
                 $this->kickUser($update['chat']['id'], $new_chat_member['id']);
             } elseif ($this->autoKickUser(
                 $chat,
                 $update['chat']['id'],
                 $new_chat_member['id']
             )) {
+                $this->sendMessage(
+                    'This user triggered the auto-kick mechanic.',
+                    ['chat_id' => $update['chat']['id']]
+                );
                 $this->kickUser($update['chat']['id'], $new_chat_member['id']);
             }
             $state = $this->getStateForUser($new_chat_member['id']);
@@ -461,6 +469,10 @@ trait NewMessageTrait
         );
         if (empty($linkedAccounts)) {
             // User does not exist in our system!
+            $this->sendMessage(
+                'This user is not known to Headless Lounge Bot.',
+                ['chat_id' => $chatId]
+            );
             return true;
         }
 
@@ -502,6 +514,10 @@ trait NewMessageTrait
                 }
             }
         }
+        $this->sendMessage(
+            'This user is not subscribed to the creator on Twitch.',
+            ['chat_id' => $chatId]
+        );
 
         // @TODO Patreon-only subs
 
