@@ -93,12 +93,12 @@ class ThirdParty extends Endpoint
         $oauth = (new AuthUrl($this->oauthSettings['patreon']['client-id']))
             ->withRedirectUri($this->baseUrl . '/authorize/patreon')
             ->withState(['oauth' => $_SESSION['patreon_oauth_id']])
-            ->withScopes([
+            /*->withScopes([
                 'identity',
                 'identity.memberships',
                 'campaigns',
                 'campaign.members'
-            ]);
+            ])*/;
         return $this->redirect($oauth->buildUrl(), 302, true);
     }
 
