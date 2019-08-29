@@ -595,10 +595,11 @@ trait NewMessageTrait
     /**
      * @param array $user
      * @throws CannotCreate
+     * @psalm-suppress MissingFile
      */
     protected function checkCanBeginEnforce(array $user): void
     {
-        if (is_readable(APP_ROOT . '/local/enforce.php')) {
+        if (file_exists(APP_ROOT . '/local/enforce.php')) {
             $db = $this->db;
             $encKey = $this->encKey;
             $container = $this->container;
