@@ -177,14 +177,10 @@ class Telegram
      */
     protected function getAdministrators(int $channel): array
     {
-        $admins = $this->apiRequest('getChatAdministrators', [
+        $result = $this->apiRequest('getChatAdministrators', [
             'chat_id' => $channel
         ]);
-        file_put_contents(
-            APP_ROOT . '/local/updates/admin-' . time() . '.json',
-            json_encode($admins, JSON_PRETTY_PRINT)
-        );
-        return $admins;
+        return $result['result'];
     }
 
     /**

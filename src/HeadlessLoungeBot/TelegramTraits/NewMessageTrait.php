@@ -200,6 +200,17 @@ trait NewMessageTrait
         $isAdmin = !empty($update['chat']['all_members_are_administrators']);
         if (!$isAdmin) {
             // Check that $chatUser['id'] belongs to $administrators
+            foreach ($administrators as $admin) {
+                if ($admin['user']['id'] === $chatUser['userid']) {
+                    $isAdmin = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$isAdmin) {
+            // You are NOT a group admin.
+            return false;
         }
 
         if ($m[1] === 'enforce' && !empty($m[2])) {
