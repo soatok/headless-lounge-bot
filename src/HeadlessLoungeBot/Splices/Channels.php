@@ -58,7 +58,11 @@ class Channels extends Splice
                   FROM headless_user_service_cache tc
                   WHERE tc.service = 'Twitch'
                     AND tc.serviceid = u.telegram_user
-                    AND tc.cachedata LIKE '%\"user_id\":{$twitchUser},%'
+                    AND (
+                        tc.cachedata LIKE '%\"user_id\":{$twitchUser},%'
+                            OR 
+                        tc.cachedata LIKE '%\"user_id\":\"{$twitchUser}\",%'
+                    )
                  ) > 0
                )
              ) /*OR (c.patreon_supporters_only AND (
@@ -66,7 +70,11 @@ class Channels extends Splice
                   FROM headless_user_service_cache pc
                   WHERE pc.service = 'Patreon'
                     AND pc.serviceid = u.patreon_user
-                    AND pc.cachedata LIKE '%\"user_id\":{$patreonUser},%'
+                    AND (
+                        pc.cachedata LIKE '%\"user_id\":{$patreonUser},%'
+                            OR
+                        pc.cachedata LIKE '%\"user_id\":\"{$patreonUser}\",%'
+                    )
                  ) > 0
                )
              )*/"
