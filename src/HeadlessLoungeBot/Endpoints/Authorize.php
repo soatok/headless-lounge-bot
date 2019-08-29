@@ -4,14 +4,12 @@ namespace Soatok\HeadlessLoungeBot\Endpoints;
 
 use Interop\Container\Exception\ContainerException;
 use ParagonIE\Certainty\Exception\CertaintyException;
-use ParagonIE\ConstantTime\Base32;
-use Patreon\AuthUrl;
-use Patreon\OAuth;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Container;
 use Soatok\AnthroKit\Endpoint;
-use Soatok\HeadlessLoungeBot\Exceptions\UserNotFoundException;
+use Soatok\DholeCrypto\Key\SymmetricKey;
+use Soatok\DholeCrypto\Symmetric;
 use Soatok\HeadlessLoungeBot\Telegram;
 use Soatok\HeadlessLoungeBot\Twitch;
 use Soatok\HeadlessLoungeBot\Splices\Users;
@@ -24,6 +22,9 @@ class Authorize extends Endpoint
 {
     /** @var string $baseUrl */
     protected $baseUrl;
+
+    /** @var SymmetricKey $encKey */
+    protected $encKey;
 
     /** @var array $oauthSettings */
     protected $oauthSettings;
@@ -47,6 +48,7 @@ class Authorize extends Endpoint
      */
     public function __construct(Container $container)
     {
+        $this->encKey = $container['settings']['encryption-key'];
         $this->oauthSettings = [
             'patreon' => $container['settings']['patreon'],
             'twitch' => $container['settings']['twitch'],
@@ -65,15 +67,20 @@ class Authorize extends Endpoint
     protected function authorizePatreon(): ResponseInterface
     {
         if (
-            empty($_SESSION['patreon_oauth_id'])
-                ||
             empty($_GET['code'])
                 ||
             empty($_GET['state'])
         ) {
             return $this->redirect('/');
         }
+        $state = json_decode(base64_decode($_GET['state'], true));
+        if (empty($state['oauth'])) {
+            // Error:
+            return $this->redirect('/');
+        }
+        $oauth = Symmetric::decrypt($state['oauth'], $this->encKey);
 
+        return $this->json($oauth);
     }
 
     /**
@@ -85,11 +92,7 @@ class Authorize extends Endpoint
      */
     protected function authorizeTwitch(): ResponseInterface
     {
-        if (empty($_SESSION['twitch_oauth_id'])) {
-            return $this->redirect('/');
-        }
-
-        if (empty($_GET['access_token'])) {
+        if (empty($_GET['access_token']) || empty($_GET['state'])) {
             /*
              * Let's not mince words: Twitch's API is stupid.
              *
@@ -104,6 +107,8 @@ class Authorize extends Endpoint
              */
             return $this->view('twitch.twig');
         }
+        $oauth = Symmetric::decrypt($_GET['state'], $this->encKey);
+        return $this->json($oauth);
     }
 
     /**

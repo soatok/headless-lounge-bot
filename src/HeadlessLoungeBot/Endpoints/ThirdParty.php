@@ -5,11 +5,14 @@ namespace Soatok\HeadlessLoungeBot\Endpoints;
 use Interop\Container\Exception\ContainerException;
 use ParagonIE\Certainty\Exception\CertaintyException;
 use ParagonIE\ConstantTime\Base32;
+use ParagonIE\HiddenString\HiddenString;
 use Patreon\AuthUrl;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Container;
 use Soatok\AnthroKit\Endpoint;
+use Soatok\DholeCrypto\Key\SymmetricKey;
+use Soatok\DholeCrypto\Symmetric;
 use Soatok\HeadlessLoungeBot\Exceptions\UserNotFoundException;
 use Soatok\HeadlessLoungeBot\Telegram;
 use Soatok\HeadlessLoungeBot\Twitch;
@@ -23,6 +26,9 @@ class ThirdParty extends Endpoint
 {
     /** @var string $baseUrl */
     protected $baseUrl;
+
+    /** @var SymmetricKey $encKey */
+    protected $encKey;
 
     /** @var array $oauthSettings */
     protected $oauthSettings;
@@ -47,6 +53,7 @@ class ThirdParty extends Endpoint
     public function __construct(Container $container)
     {
         $this->baseUrl = $container['settings']['base-url'];
+        $this->encKey = $container['settings']['encryption-key'];
         $this->oauthSettings = [
             'patreon' => $container['settings']['patreon'],
             'twitch' => $container['settings']['twitch'],
@@ -65,9 +72,17 @@ class ThirdParty extends Endpoint
      */
     protected function handleTwitchOauth(array $row): ResponseInterface
     {
-        $_SESSION['twitch_oauth_state'] = $row;
-        $_SESSION['twitch_oauth_id'] = Base32::encodeUpperUnpadded(random_bytes(30));
-        session_write_close();
+        $cipher = Symmetric::encrypt(
+            new HiddenString(json_encode([
+                'expires' => (new \DateTime())
+                    ->add(new \DateInterval('PT05M'))
+                    ->format(\DateTime::ATOM),
+                'url_token' => $row['url_token'],
+                'service' => 'Twitch',
+                'userid' => $row['userid']
+            ])),
+            $this->encKey
+        );
         $url = 'https://id.twitch.tv/oauth2/authorize?' . http_build_query([
             'client_id' => $this->oauthSettings['twitch']['client-id'],
             'redirect_uri' => $this->baseUrl . '/authorize/twitch',
@@ -77,7 +92,7 @@ class ThirdParty extends Endpoint
                 'channel_subscriptions',
                 'user_subscriptions'
             ]),
-            'state' => $_SESSION['twitch_oauth_id']
+            'state' => $cipher
         ]);
         return $this->redirect($url, 302, true);
     }
@@ -89,18 +104,20 @@ class ThirdParty extends Endpoint
      */
     protected function handlePatreonOauth(array $row): ResponseInterface
     {
-        $_SESSION['patreon_oauth_state'] = $row;
-        $_SESSION['patreon_oauth_id'] = Base32::encodeUpperUnpadded(random_bytes(30));
-        session_write_close();
+        $cipher = Symmetric::encrypt(
+            new HiddenString(json_encode([
+                'expires' => (new \DateTime())
+                    ->add(new \DateInterval('PT05M'))
+                    ->format(\DateTime::ATOM),
+                'url_token' => $row['url_token'],
+                'service' => 'Patreon',
+                'userid' => $row['userid']
+            ])),
+            $this->encKey
+        );
         $oauth = (new AuthUrl($this->oauthSettings['patreon']['client-id']))
             ->withRedirectUri($this->baseUrl . '/authorize/patreon')
-            ->withState(['oauth' => $_SESSION['patreon_oauth_id']])
-            /*->withScopes([
-                'identity',
-                'identity.memberships',
-                'campaigns',
-                'campaign.members'
-            ])*/;
+            ->withState(['oauth' => $cipher]);
         return $this->redirect($oauth->buildUrl(), 302, true);
     }
 
