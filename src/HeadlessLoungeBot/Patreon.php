@@ -108,6 +108,22 @@ class Patreon
      */
     public function getPledges(): array
     {
+        $data = $this->getPledgeData();
+        if (empty($data)) {
+            return [];
+        }
+        return $data['pledges'];
+    }
+
+    /**
+     * @return array
+     * @throws \Patreon\Exceptions\APIException
+     * @throws \Patreon\Exceptions\CurlException
+     * @throws \Soatok\DholeCrypto\Exceptions\CryptoException
+     * @throws \SodiumException
+     */
+    public function getPledgeData(): array
+    {
         $api = $this->getAPIAdapter();
         if (!$api) {
             return [];
@@ -118,9 +134,19 @@ class Patreon
         }
 
         $allPledges = [];
+        $allTiers = [];
+        foreach ($campaigns['included'] as $tier) {
+            if ($tier['id'] < 1 || $tier['type'] !== 'reward') {
+                continue;
+            }
+            $tier['attributes']['id'] = $tier['id'];
+            $allTiers[] = $tier['attributes'];
+        }
+
         foreach ($campaigns['data'] as $camp) {
             $cursor = null;
-            $campaign = $camp['id'];            do {
+            $campaign = $camp['id'];
+            do {
                 $args = [
                     'include' => 'currently_entitled_tiers',
                     'page' => [
@@ -132,7 +158,7 @@ class Patreon
                 }
                 $response = $api->get_data('campaigns/' . $campaign . '/members', $args);
                 foreach ($response['data'] as $row) {
-                    if (isset($row['id'])) {
+                    if (empty($row['id'])) {
                         continue;
                     }
                     $tiers = [];
@@ -146,7 +172,7 @@ class Patreon
                 }
             } while (!empty($response['links']['next']));
         }
-        return $allPledges;
+        return ['tiers' => $allTiers, 'pledges' => $allPledges];
     }
 
     /**
