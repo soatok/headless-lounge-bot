@@ -525,17 +525,8 @@ trait NewMessageTrait
 
         // This affects our final fallback behavior.
         $autoKick = $settings['twitch_sub_only'] || $settings['patreon_supporters_only'];
-        if ($settings['twitch_sub_only']) {
-            $oauth = $this->db->row(
-                "SELECT * FROM headless_users_oauth 
-                 WHERE service = 'Twitch' AND userid = ?",
-                $owner['userid']
-            );
-            if (!empty($oauth)) {
-                $twitch = $this->twitch->forChannel($oauth['serviceid']);
-            } else {
-                $twitch = $this->twitch;
-            }
+        if ($settings['twitch_sub_only'] && !empty($owner['twitch_user'])) {
+            $twitch = $this->twitch->forChannel($owner['twitch_user']);
             $subs = $twitch->getSubscribers();
             // Parse $subs, figure out if new user is a sub or not, kick them otherwise...
             foreach ($subs as $sub) {
