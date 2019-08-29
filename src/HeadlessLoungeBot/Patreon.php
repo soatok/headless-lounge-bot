@@ -28,7 +28,7 @@ class Patreon
     /** @var SymmetricKey $encKey */
     protected $encKey;
 
-    /** @var int $forCreator */
+    /** @var string|null $forCreator */
     protected $forCreator;
 
     /**
@@ -153,6 +153,7 @@ class Patreon
      * @throws \Patreon\Exceptions\CurlException
      * @throws \Soatok\DholeCrypto\Exceptions\CryptoException
      * @throws \SodiumException
+     * @psalm-suppress TypeDoesNotContainType
      */
     public function getPledgeData(): array
     {
@@ -188,6 +189,7 @@ class Patreon
                 if (!empty($cursor)) {
                     $args['page']['cursor'] = $cursor;
                 }
+                /** @var array $response */
                 $response = $api->get_data('campaigns/' . $campaign . '/members', $args);
                 foreach ($response['data'] as $row) {
                     if (empty($row['id'])) {
@@ -257,8 +259,8 @@ class Patreon
     }
 
     /**
-     * @param int|null $creator
-     * @return self
+     * @param string|null $creator
+     * @return Patreon
      */
     public function forCreator(?string $creator = null): self
     {

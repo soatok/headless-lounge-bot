@@ -51,6 +51,9 @@ class Telegram
     /** @var Client $http */
     protected $http;
 
+    /** @var Patreon $patreon */
+    protected $patreon;
+
     /** @var HiddenString $token */
     protected $token;
 
@@ -96,6 +99,7 @@ class Telegram
             ]);
         }
         $this->http = $http;
+        $this->patreon = new Patreon($c);
         if (!$twitch) {
             $twitch = new Twitch($c, $this->http);
         }

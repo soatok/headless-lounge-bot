@@ -25,6 +25,8 @@ Setup is straightforward:
 3. Type `/enforce [service] [minimum]`
    * `/enforce Twitch` for Tier 1+ Twitch subs.
    * `/enforce Twitch 2` for Tier 2+ Twitch subs.
+   * `/enforce Patreon 5` for $5/mo. or more pledge.
+   * `/enforce Patreon 10` for $10/mo. or more pledge.
 
 Anyone who joins the group will be auto-kicked unless...
 

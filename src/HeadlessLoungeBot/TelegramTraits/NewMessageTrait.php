@@ -7,6 +7,7 @@ use ParagonIE\EasyDB\EasyDB;
 use Soatok\DholeCrypto\Exceptions\CryptoException;
 use Soatok\DholeCrypto\Key\SymmetricKey;
 use Soatok\HeadlessLoungeBot\Exceptions\CannotCreate;
+use Soatok\HeadlessLoungeBot\Patreon;
 use Soatok\HeadlessLoungeBot\Splices\Channels;
 use Soatok\HeadlessLoungeBot\Splices\Users;
 use Soatok\HeadlessLoungeBot\Twitch;
@@ -19,6 +20,7 @@ use Soatok\HeadlessLoungeBot\Twitch;
  * @property Channels $channels
  * @property EasyDB $db
  * @property SymmetricKey $encKey
+ * @property Patreon $patreon
  * @property Twitch $twitch
  * @property Users $users
  *
@@ -302,6 +304,19 @@ trait NewMessageTrait
             }
         }
 
+        if ($m[1] === 'help') {
+            $commandHelp = "";
+            if ($isAdmin) {
+                $commandHelp .= "- `/enforce` - Sets up @HeadlessLounge_Bot. Make sure the bot is an admin first.\n";
+            } else {
+                $commandHelp .= "_(No commands available. You are not an admin.)_";
+            }
+            $this->sendMessage(
+                "*Commands*\n{$commandHelp}",
+                ['chat_id' => $update['chat']['id']]
+            );
+            return true;
+        }
         if (!$isAdmin) {
             // You are NOT a group admin.
             $this->sendMessage(
@@ -502,6 +517,8 @@ trait NewMessageTrait
      * @param int $userId
      * @return bool
      * @throws CryptoException
+     * @throws \Patreon\Exceptions\APIException
+     * @throws \Patreon\Exceptions\CurlException
      * @throws \SodiumException
      */
     protected function autoKickUser(array $settings, int $chatId, int $userId): bool
@@ -543,6 +560,8 @@ trait NewMessageTrait
 
         // This affects our final fallback behavior.
         $autoKick = $settings['twitch_sub_only'] || $settings['patreon_supporters_only'];
+
+        // Twitch:
         if ($settings['twitch_sub_only'] && !empty($owner['twitch_user'])) {
             $twitch = $this->twitch->forChannel($owner['twitch_user']);
             $subs = $twitch->getSubscribers();
@@ -566,13 +585,23 @@ trait NewMessageTrait
                 }
             }
         }
-        $this->sendMessage(
-            'This user is not a known Twitch sub.',
-            ['chat_id' => $chatId]
-        );
 
-        // @TODO Patreon-only subs
+        // Patreon:
+        if ($settings['patreon_supporters_only'] && !empty($owner['patreon_user'])) {
+            $patreon = $this->patreon->forCreator($owner['patreon_user']);
+            $patreonUser = $this->db->cell(
+                "SELECT patreon_user FROM headless_users WHERE userid = ?",
+                $userId
+            );
 
+            if (!empty($patreonUser)) {
+                // If you pledge greater than or equal to the minimum, don't kick.
+                return !$patreon->patreonUserPledgesAbove(
+                    $patreonUser,
+                    ($settings['patreon_rank_minimum'] ?? 0) * 100
+                );
+            }
+        }
         return $autoKick;
     }
 
