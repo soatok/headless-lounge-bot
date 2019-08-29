@@ -187,7 +187,7 @@ trait NewMessageTrait
     protected function commandList(int $telegramUserId, int $chatId): array
     {
         $channels = $this->channels->getTelegramExclusiveAllowedChannels($telegramUserId);
-        $message = '*Channels*: ' . PHP_EOL;
+        $message = '<b>Channels</b>: ' . PHP_EOL;
         foreach ($channels as $chan) {
             try {
                 $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
@@ -222,10 +222,17 @@ trait NewMessageTrait
             }
         }
         try {
-            return $this->sendMessage(trim($message), ['chat_id' => $chatId]);
+            return $this->sendMessage(trim($message), [
+                'chat_id' => $chatId,
+                'parse_mode' => 'HTML'
+            ]);
         } catch (BadResponseException $ex) {
             throw new \Exception(
-                '' . $ex->getRequest()->getBody()->getContents(),
+                json_encode([
+                    'msg' => $ex->getMessage(),
+                    'message' => $message,
+                    'req' => $ex->getResponse()->getBody()->getContents()
+                ]),
                 0,
                 $ex
             );
