@@ -291,6 +291,7 @@ class Twitch
         }
         return [
             'headers' => [
+                'Client-ID' => $this->clientId,
                 'Authorization' => 'Bearer ' .
                     Symmetric::decrypt($row['access_token'], $this->key)
             ]
