@@ -351,6 +351,7 @@ trait NewMessageTrait
 
         $this->db->beginTransaction();
         if (empty($chat)) {
+            $fields['channel_user_id'] = $chatUser['userid'];
             $fields['exceptions'] = '[]';
             $this->db->insert('headless_channels', $fields);
         } else {
