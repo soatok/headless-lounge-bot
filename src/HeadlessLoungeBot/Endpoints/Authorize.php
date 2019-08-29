@@ -83,7 +83,6 @@ class Authorize extends Endpoint
             return $this->redirect('/');
         }
 
-        return $this->json(['work in progress']);
     }
 
     /**
@@ -114,7 +113,6 @@ class Authorize extends Endpoint
              */
             return $this->view('twitch.twig');
         }
-        return $this->json(['work in progress']);
     }
 
     /**
