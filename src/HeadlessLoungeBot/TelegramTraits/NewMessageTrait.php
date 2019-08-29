@@ -167,6 +167,9 @@ trait NewMessageTrait
             "SELECT * FROM headless_channels WHERE telegram_chat_id = ?",
             $update['chat']['id']
         );
+        if (empty($chat)) {
+            $chat = [];
+        }
 
         // Process new members: Are they allowed?
         if (!empty($update['new_chat_members'])) {
@@ -189,8 +192,35 @@ trait NewMessageTrait
         if (!preg_match('#^/([A-Za-z0-9_]+)[\s]+?([^\s]+)?#', $update['text'], $m)) {
             return false;
         }
+        $chatUser = $this->db->row(
+            "SELECT * FROM headless_users WHERE telegram_user = ?",
+            $update['from']['id']
+        );
         $administrators = $this->getAdministrators($update['chat']['id']);
         $isAdmin = !empty($update['chat']['all_members_are_administrators']);
+        if (!$isAdmin) {
+            // Check that $chatUser['id'] belongs to $administrators
+        }
+
+        if ($m[1] === 'enforce' && !empty($m[2])) {
+            $fields = [
+                'telegram_chat_id' => $update['chat']['id'],
+                'channel_user_id' => $chatUser['id']
+            ];
+            if (strtolower($m[2]) === 'twitch') {
+                if (!empty($m[3])) {
+                    $fields['twitch_sub_minimum'] = (int) $m[3];
+                }
+                $fields['twitch_sub_only'] = true;
+            }
+            $this->db->beginTransaction();
+            if (empty($chat)) {
+                $this->db->insert('headless_channels', $fields);
+            } else {
+                $this->db->update('headless_channels', $fields, ['id' => $chat['channelid']]);
+            }
+            return $this->db->commit();
+        }
     }
 
     /**
@@ -202,6 +232,9 @@ trait NewMessageTrait
      */
     protected function handleNewMembers(array $chat, array $update): bool
     {
+        if (empty($chat)) {
+            return false;
+        }
         foreach ($update['new_chat_members'] as $new_chat_member) {
             if ($new_chat_member['id'] === $this->botUserId) {
                 continue;
