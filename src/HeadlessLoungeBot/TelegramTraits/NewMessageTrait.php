@@ -264,7 +264,7 @@ trait NewMessageTrait
         if (!$isAdmin) {
             // Check that $chatUser['id'] belongs to $administrators
             foreach ($administrators as $admin) {
-                if ($admin['user']['id'] === $chatUser['userid']) {
+                if ($admin['user']['id'] === $chatUser['telegram_user']) {
                     $isAdmin = true;
                     break;
                 }
