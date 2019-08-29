@@ -17,7 +17,7 @@ $db = $c['db'];
 $twitch = new Twitch($c);
 
 foreach ($db->run(
-    "SELECT * FROM headless_channels c
+    "SELECT twitch_user FROM headless_channels c
     JOIN headless_users hu on c.channel_user_id = hu.userid"
 ) as $channel) {
     $twitch = $twitch->forChannel((int) $channel['twitch_user']);

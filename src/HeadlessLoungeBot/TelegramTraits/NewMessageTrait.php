@@ -505,12 +505,10 @@ trait NewMessageTrait
         );
         if (empty($linkedAccounts)) {
             // User does not exist in our system!
-            /*
             $this->sendMessage(
                 'This user is not known to Headless Lounge Bot.',
                 ['chat_id' => $chatId]
             );
-            */
             return true;
         }
 
@@ -545,13 +543,24 @@ trait NewMessageTrait
                     // We found a match!
                     if ($settings['twitch_sub_minimum'] > 0) {
                         // Auto-kick if tier is too low:
-                        return $sub['tier'] < $settings['twitch_sub_minimum'];
+                        if ($sub['tier'] < $settings['twitch_sub_minimum']) {
+                            $this->sendMessage(
+                                'Tier too low.',
+                                ['chat_id' => $chatId]
+                            );
+                            return true;
+                        }
+                        return false;
                     }
                     // Don't autokick
                     return false;
                 }
             }
         }
+        $this->sendMessage(
+            'This user is not a known Twitch sub.',
+            ['chat_id' => $chatId]
+        );
 
         // @TODO Patreon-only subs
 
