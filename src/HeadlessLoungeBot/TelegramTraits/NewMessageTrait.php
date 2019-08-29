@@ -354,7 +354,11 @@ trait NewMessageTrait
             $fields['exceptions'] = '[]';
             $this->db->insert('headless_channels', $fields);
         } else {
-            $this->db->update('headless_channels', $fields, ['id' => $chat['channelid']]);
+            $this->db->update(
+                'headless_channels',
+                $fields,
+                ['channelid' => $chat['channelid']]
+            );
         }
         if ($this->db->commit()) {
             $this->sendMessage(
