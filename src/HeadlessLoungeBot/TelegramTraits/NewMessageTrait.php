@@ -86,10 +86,10 @@ trait NewMessageTrait
                 $this->commandList($update['from']['id']);
                 break;
             case '/link twitch':
-                $this->commandLink($user, 'Twitch');
+                $this->commandLink($update, $user, 'Twitch');
                 break;
             case '/link patreon':
-                $this->commandLink($user, 'Patreon');
+                $this->commandLink($update, $user, 'Patreon');
                 break;
             case '/status':
                 $this->commandStatus($update);
@@ -101,12 +101,13 @@ trait NewMessageTrait
     }
 
     /**
+     * @param array $update
      * @param array $user
      * @param string $service
      * @return bool
      * @throws \Exception
      */
-    protected function commandLink(array $user, string $service): bool
+    protected function commandLink(array $update, array $user, string $service): bool
     {
         $this->db->beginTransaction();
         $exists = $this->db->exists(
@@ -139,7 +140,9 @@ trait NewMessageTrait
             );
         }
         $this->sendMessage(
-            'Please visit this URL to link your ' . $service . ' account:' . $href
+            'Please visit this URL to link your ' . $service . ' account:' . $href, [
+                'chat_id' => $update['chat']['id']
+            ]
         );
         return $this->db->commit();
     }
@@ -251,7 +254,8 @@ trait NewMessageTrait
         );
         if (empty($chatUser)) {
             $this->sendMessage(
-                'Please talk to me directly to setup and link your accounts.'
+                'Please talk to me directly to setup and link your accounts.',
+                ['chat_id' => $update['chat']['id']]
             );
             return false;
         }
@@ -277,7 +281,8 @@ trait NewMessageTrait
         }
         if (empty($chat)) {
             $this->sendMessage(
-                'This group is not protected by Headless Lounge Bot.'
+                'This group is not protected by Headless Lounge Bot.',
+                ['chat_id' => $update['chat']['id']]
             );
             return false;
         }
@@ -311,7 +316,8 @@ trait NewMessageTrait
             if (empty($chatUser['twitch_user'])) {
                 $this->sendMessage(
                     'You do not have a linked Twitch account.' . PHP_EOL . PHP_EOL .
-                    'Please message the bot directly to link your accounts.'
+                    'Please message the bot directly to link your accounts.',
+                    ['chat_id' => $update['chat']['id']]
                 );
                 return false;
             }
@@ -323,7 +329,8 @@ trait NewMessageTrait
             if (empty($chatUser['patreon_user'])) {
                 $this->sendMessage(
                     'You do not have a linked Patreon account.' . PHP_EOL . PHP_EOL .
-                    'Please message the bot directly to link your accounts.'
+                    'Please message the bot directly to link your accounts.',
+                    ['chat_id' => $update['chat']['id']]
                 );
                 return false;
             }
