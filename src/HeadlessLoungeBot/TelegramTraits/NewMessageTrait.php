@@ -166,14 +166,12 @@ trait NewMessageTrait
                         ' (@' . $res['username'] . ')' . PHP_EOL;
                 } else {
                     if (empty($res['invite_link'])) {
-                        $link = $this->apiRequest('exportChatInviteLink', ['chat_id' => $chan]);
-                        $message .= '`' . json_encode($link) . '`' . PHP_EOL;
+                        $this->apiRequest('exportChatInviteLink', ['chat_id' => $chan]);
                         $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
                         $res = $meta['result'];
                     }
                     $message .= '- ' . $res['title'] .
                         ' (' . $res['invite_link'] . ')' . PHP_EOL;
-                    $message .= '`' . json_encode($meta) . '`' . PHP_EOL;
                 }
             }
         }
