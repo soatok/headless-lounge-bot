@@ -198,7 +198,7 @@ trait NewMessageTrait
                 $res = $meta['result'];
                 if (isset($res['username'])) {
                     $message .= '- ' . $res['title'] .
-                        ' (@' . $res['username'] . ')' . PHP_EOL;
+                        ' ( @' . $res['username'] . ' )' . PHP_EOL;
                 } else {
                     if (empty($res['invite_link'])) {
                         // Attempt to get the invite link
