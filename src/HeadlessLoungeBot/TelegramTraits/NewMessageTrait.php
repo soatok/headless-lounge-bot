@@ -226,11 +226,31 @@ trait NewMessageTrait
                 'channel_user_id' => $chatUser['id']
             ];
             if (strtolower($m[2]) === 'twitch') {
+                if (empty($chatUser['twitch_user'])) {
+                    $this->sendMessage(
+                        'You do not have a linked Twitch account.' . PHP_EOL . PHP_EOL .
+                        'Please message the bot directly to link your accounts.'
+                    );
+                    return false;
+                }
                 if (!empty($m[3])) {
                     $fields['twitch_sub_minimum'] = (int) $m[3];
                 }
                 $fields['twitch_sub_only'] = true;
+            } else if (strtolower($m[2]) === 'patreon') {
+                if (empty($chatUser['patreon_user'])) {
+                    $this->sendMessage(
+                        'You do not have a linked Patreon account.' . PHP_EOL . PHP_EOL .
+                        'Please message the bot directly to link your accounts.'
+                    );
+                    return false;
+                }
+                if (!empty($m[3])) {
+                    $fields['patreon_rank_minimum'] = (int) $m[3];
+                }
+                $fields['patreon_supporters_only'] = true;
             }
+
             $this->db->beginTransaction();
             if (empty($chat)) {
                 $this->db->insert('headless_channels', $fields);
@@ -239,6 +259,16 @@ trait NewMessageTrait
             }
             return $this->db->commit();
         }
+        if (empty($chat)) {
+            $this->sendMessage(
+                'This group is not protected by Headless Lounge Bot.'
+            );
+            return false;
+        }
+
+        // TODO: Other commands
+
+        return false;
     }
 
     /**

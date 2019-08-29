@@ -36,7 +36,9 @@ $default = [
         'displayErrorDetails' => true, // set to false in production
         'addContentLengthHeader' => false, // Allow the web server to send the content-length header
 
-        'encryption-key' => $key,
+        'base-url' => 'https://headless.soatok.com',
+
+            'encryption-key' => $key,
 
         'database' => [
             'dsn' => 'pgsql:host=localhost;dbname=headlesslounge',
