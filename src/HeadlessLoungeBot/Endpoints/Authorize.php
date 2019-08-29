@@ -111,6 +111,9 @@ class Authorize extends Endpoint
             $_GET['code'],
             $this->baseUrl . '/authorize/patreon'
         );
+        if (empty($tokens['access_token'])) {
+            return $this->redirect('/');
+        }
 
         $user = (new PatreonAPI(new HiddenString($tokens['access_token'])))
             ->fetch_user();
@@ -166,6 +169,9 @@ class Authorize extends Endpoint
         ]);
         $response = $http->post('https://id.twitch.tv/oauth2/token?' . $query);
         $tokens = json_decode($response->getBody()->getContents(), true);
+        if (empty($tokens['access_token'])) {
+            return $this->redirect('/');
+        }
 
         // Get the user ID:
         $response = $http->get('https://api.twitch.tv/helix/users', [
