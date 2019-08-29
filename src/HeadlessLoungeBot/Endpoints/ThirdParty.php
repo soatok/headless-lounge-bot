@@ -75,7 +75,7 @@ class ThirdParty extends Endpoint
         $cipher = Symmetric::encrypt(
             new HiddenString(json_encode([
                 'expires' => (new \DateTime())
-                    ->add(new \DateInterval('PT05M'))
+                    ->add(new \DateInterval('P01D'))
                     ->format(\DateTime::ATOM),
                 'url_token' => $row['url_token'],
                 'service' => 'Twitch',
@@ -107,7 +107,7 @@ class ThirdParty extends Endpoint
         $cipher = Symmetric::encrypt(
             new HiddenString(json_encode([
                 'expires' => (new \DateTime())
-                    ->add(new \DateInterval('PT05M'))
+                    ->add(new \DateInterval('P01D'))
                     ->format(\DateTime::ATOM),
                 'url_token' => $row['url_token'],
                 'service' => 'Patreon',
