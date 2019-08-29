@@ -47,25 +47,16 @@ class Authorize extends Endpoint
      */
     public function __construct(Container $container)
     {
-        if (
-            empty($_SESSION['twitch_oauth_id'])
-            ||
-            empty($_GET['code'])
-            ||
-            empty($_GET['state'])
-        ) {
-            return $this->redirect('/');
-        }
         $this->oauthSettings = [
             'patreon' => $container['settings']['patreon'],
             'twitch' => $container['settings']['twitch'],
         ];
         $this->telegram = new Telegram($container);
         $this->twitch = new Twitch($container);
-        $this->users = $this->splice('Users');
         $this->baseUrl = $container['settings']['base-url'];
 
         parent::__construct($container);
+        $this->users = $this->splice('Users');
     }
 
     /**

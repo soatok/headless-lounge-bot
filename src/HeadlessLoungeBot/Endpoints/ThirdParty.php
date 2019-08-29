@@ -53,9 +53,9 @@ class ThirdParty extends Endpoint
         ];
         $this->telegram = new Telegram($container);
         $this->twitch = new Twitch($container);
-        $this->users = $this->splice('Users');
 
         parent::__construct($container);
+        $this->users = $this->splice('Users');
     }
 
     /**
