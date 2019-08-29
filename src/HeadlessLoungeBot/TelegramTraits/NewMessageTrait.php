@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace Soatok\HeadlessLoungeBot\TelegramTraits;
 
+use GuzzleHttp\Exception\BadResponseException;
 use ParagonIE\ConstantTime\Base32;
 use ParagonIE\EasyDB\EasyDB;
 use Soatok\DholeCrypto\Exceptions\CryptoException;
@@ -66,6 +67,28 @@ trait NewMessageTrait
     }
 
     /**
+     * @param int $chatId
+     * @return bool
+     */
+    protected function aboutCommand(int $chatId)
+    {
+        if (file_exists(APP_ROOT . '/local/about.md')) {
+            $this->sendMessage(
+                file_get_contents(APP_ROOT . '/local/about.md'),
+                ['chat_id' => $chatId]
+            );
+            return true;
+        }
+        $this->sendMessage(
+            'Headless Lounge Bot was created by Soatok Dreamseeker' . PHP_EOL .
+            '@soatok' . PHP_EOL .
+            'https://www.patreon.com/soatok',
+            ['chat_id' => $chatId]
+        );
+        return true;
+    }
+
+    /**
      * @param array $update
      * @return bool
      * @throws \Exception
@@ -85,6 +108,9 @@ trait NewMessageTrait
             // Do more here
         }
         switch (strtolower(trim($update['text']))) {
+            case '/about':
+                $this->aboutCommand($update['chat']['id']);
+                break;
             case '/start':
                 $this->commandStart($update['chat']['id']);
                 break;
@@ -163,7 +189,11 @@ trait NewMessageTrait
         $channels = $this->channels->getTelegramExclusiveAllowedChannels($telegramUserId);
         $message = '*Channels*: ' . PHP_EOL;
         foreach ($channels as $chan) {
-            $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
+            try {
+                $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
+            } catch (BadResponseException $ex) {
+                continue;
+            }
             if ($meta['ok'] && !empty($meta['result'])) {
                 $res = $meta['result'];
                 if (isset($res['username'])) {
@@ -171,9 +201,16 @@ trait NewMessageTrait
                         ' (@' . $res['username'] . ')' . PHP_EOL;
                 } else {
                     if (empty($res['invite_link'])) {
-                        $this->apiRequest('exportChatInviteLink', ['chat_id' => $chan]);
+                        try {
+                            $this->apiRequest('exportChatInviteLink', ['chat_id' => $chan]);
+                        } catch (BadResponseException $ex) {
+                            continue;
+                        }
                         $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
                         $res = $meta['result'];
+                    }
+                    if (empty($res['invite_link'])) {
+                        continue;
                     }
                     $message .= '- ' . $res['title'] .
                         ' (' . $res['invite_link'] . ')' . PHP_EOL;
@@ -240,6 +277,8 @@ trait NewMessageTrait
      * @param array $update
      * @return bool
      * @throws CryptoException
+     * @throws \Patreon\Exceptions\APIException
+     * @throws \Patreon\Exceptions\CurlException
      * @throws \SodiumException
      */
     public function newMessageGroup(array $update): bool
@@ -304,6 +343,9 @@ trait NewMessageTrait
             }
         }
 
+        if ($m[1] === 'about') {
+            return $this->aboutCommand($update['chat']['id']);
+        }
         if ($m[1] === 'help') {
             $commandHelp = "";
             if ($isAdmin) {
