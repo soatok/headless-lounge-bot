@@ -221,7 +221,15 @@ trait NewMessageTrait
                 }
             }
         }
-        return $this->sendMessage(trim($message), ['chat_id' => $chatId]);
+        try {
+            return $this->sendMessage(trim($message), ['chat_id' => $chatId]);
+        } catch (BadResponseException $ex) {
+            throw new \Exception(
+                '' . $ex->getRequest()->getBody()->getContents(),
+                0,
+                $ex
+            );
+        }
     }
 
     /**
