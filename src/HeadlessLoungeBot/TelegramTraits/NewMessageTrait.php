@@ -221,43 +221,7 @@ trait NewMessageTrait
         }
 
         if ($m[1] === 'enforce' && !empty($m[2])) {
-            $fields = [
-                'telegram_chat_id' => $update['chat']['id'],
-                'channel_user_id' => $chatUser['id']
-            ];
-            if (strtolower($m[2]) === 'twitch') {
-                if (empty($chatUser['twitch_user'])) {
-                    $this->sendMessage(
-                        'You do not have a linked Twitch account.' . PHP_EOL . PHP_EOL .
-                        'Please message the bot directly to link your accounts.'
-                    );
-                    return false;
-                }
-                if (!empty($m[3])) {
-                    $fields['twitch_sub_minimum'] = (int) $m[3];
-                }
-                $fields['twitch_sub_only'] = true;
-            } else if (strtolower($m[2]) === 'patreon') {
-                if (empty($chatUser['patreon_user'])) {
-                    $this->sendMessage(
-                        'You do not have a linked Patreon account.' . PHP_EOL . PHP_EOL .
-                        'Please message the bot directly to link your accounts.'
-                    );
-                    return false;
-                }
-                if (!empty($m[3])) {
-                    $fields['patreon_rank_minimum'] = (int) $m[3];
-                }
-                $fields['patreon_supporters_only'] = true;
-            }
-
-            $this->db->beginTransaction();
-            if (empty($chat)) {
-                $this->db->insert('headless_channels', $fields);
-            } else {
-                $this->db->update('headless_channels', $fields, ['id' => $chat['channelid']]);
-            }
-            return $this->db->commit();
+            return $this->groupEnforceCommand($chat, $chatUser, $update, $m);
         }
         if (empty($chat)) {
             $this->sendMessage(
@@ -269,6 +233,58 @@ trait NewMessageTrait
         // TODO: Other commands
 
         return false;
+    }
+
+    /**
+     * @param array $chat
+     * @param array $chatUser
+     * @param array $update
+     * @param array $m
+     * @return bool
+     */
+    protected function groupEnforceCommand(
+        array $chat,
+        array $chatUser,
+        array $update,
+        array $m
+    ): bool {
+        $fields = [
+            'telegram_chat_id' => $update['chat']['id'],
+            'channel_user_id' => $chatUser['id']
+        ];
+        if (strtolower($m[2]) === 'twitch') {
+            if (empty($chatUser['twitch_user'])) {
+                $this->sendMessage(
+                    'You do not have a linked Twitch account.' . PHP_EOL . PHP_EOL .
+                    'Please message the bot directly to link your accounts.'
+                );
+                return false;
+            }
+            if (!empty($m[3])) {
+                $fields['twitch_sub_minimum'] = (int) $m[3];
+            }
+            $fields['twitch_sub_only'] = true;
+        } else if (strtolower($m[2]) === 'patreon') {
+            if (empty($chatUser['patreon_user'])) {
+                $this->sendMessage(
+                    'You do not have a linked Patreon account.' . PHP_EOL . PHP_EOL .
+                    'Please message the bot directly to link your accounts.'
+                );
+                return false;
+            }
+            if (!empty($m[3])) {
+                $fields['patreon_rank_minimum'] = (int) $m[3];
+            }
+            $fields['patreon_supporters_only'] = true;
+        }
+
+        $this->db->beginTransaction();
+        if (empty($chat)) {
+            $this->db->insert('headless_channels', $fields);
+        } else {
+            $this->db->update('headless_channels', $fields, ['id' => $chat['channelid']]);
+        }
+        return $this->db->commit();
     }
 
     /**
