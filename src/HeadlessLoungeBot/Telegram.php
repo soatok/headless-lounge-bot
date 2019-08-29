@@ -11,6 +11,7 @@ use ParagonIE\HiddenString\HiddenString;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Container;
 use Soatok\DholeCrypto\Exceptions\CryptoException;
+use Soatok\DholeCrypto\Key\SymmetricKey;
 use Soatok\HeadlessLoungeBot\Splices\Channels;
 use Soatok\HeadlessLoungeBot\Splices\Users;
 use Soatok\HeadlessLoungeBot\TelegramTraits\NewMessageTrait;
@@ -35,11 +36,17 @@ class Telegram
     /** @var Channels $channels */
     protected $channels;
 
+    /** @var Container $container */
+    protected $container;
+
     /** @var bool $debug */
     protected $debug = false;
 
     /** @var EasyDB $db */
     protected $db;
+
+    /** @var SymmetricKey $encKey */
+    protected $encKey;
 
     /** @var Client $http */
     protected $http;
@@ -77,6 +84,7 @@ class Telegram
         $this->baseUrl = $c['settings']['base-url'];
         $this->botUsername = $botName;
         $this->botUserId = $c['settings']['tg-bot-user-id'];
+        $this->encKey = $c['settings']['encryption-key'];
         $this->db = $c->get('db');
         $this->debug = $c['settings']['bot-debug'];
         $this->token = $token;
@@ -92,6 +100,7 @@ class Telegram
             $twitch = new Twitch($c, $this->http);
         }
         $this->twitch = $twitch;
+        $this->container = $c;
 
         // Splices:
         $this->channels = new Channels($c);

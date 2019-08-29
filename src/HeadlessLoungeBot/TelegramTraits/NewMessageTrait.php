@@ -5,6 +5,8 @@ namespace Soatok\HeadlessLoungeBot\TelegramTraits;
 use ParagonIE\ConstantTime\Base32;
 use ParagonIE\EasyDB\EasyDB;
 use Soatok\DholeCrypto\Exceptions\CryptoException;
+use Soatok\DholeCrypto\Key\SymmetricKey;
+use Soatok\HeadlessLoungeBot\Exceptions\CannotCreate;
 use Soatok\HeadlessLoungeBot\Splices\Channels;
 use Soatok\HeadlessLoungeBot\Splices\Users;
 use Soatok\HeadlessLoungeBot\Twitch;
@@ -16,6 +18,7 @@ use Soatok\HeadlessLoungeBot\Twitch;
  * @property string $baseUrl
  * @property Channels $channels
  * @property EasyDB $db
+ * @property SymmetricKey $encKey
  * @property Twitch $twitch
  * @property Users $users
  *
@@ -344,6 +347,18 @@ trait NewMessageTrait
             'telegram_chat_id' => $update['chat']['id'],
             'channel_user_id' => $chatUser['id']
         ];
+
+        try {
+            // Are you allowed to setup the bot to enforce your group?
+            $this->checkCanBeginEnforce($chatUser);
+        } catch (CannotCreate $ex) {
+            $this->sendMessage(
+                $ex->getMessage(),
+                ['chat_id' => $update['chat']['id']]
+            );
+            return false;
+        }
+
         $message = '';
         if (strtolower($m[2]) === 'twitch') {
             if (empty($chatUser['twitch_user'])) {
@@ -575,5 +590,19 @@ trait NewMessageTrait
                 $userId,
             'until_date' => time() + 31
         ]);
+    }
+
+    /**
+     * @param array $user
+     * @throws CannotCreate
+     */
+    protected function checkCanBeginEnforce(array $user): void
+    {
+        if (is_readable(APP_ROOT . '/local/enforce.php')) {
+            $db = $this->db;
+            $encKey = $this->encKey;
+            $container = $this->container;
+            require APP_ROOT . '/local/enforce.php';
+        }
     }
 }
