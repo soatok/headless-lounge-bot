@@ -118,17 +118,31 @@ class Patreon
         }
 
         $allPledges = [];
-        foreach ($campaigns as $camp) {
+        foreach ($campaigns['data'] as $camp) {
             $cursor = null;
-            $campaign = $camp['id'];
-            do {
-                $response = $api->fetch_page_of_members_from_campaign(
-                    $campaign, 25, $cursor
-                );
+            $campaign = $camp['id'];            do {
+                $args = [
+                    'include' => 'currently_entitled_tiers',
+                    'page' => [
+                        'count' => 25
+                    ]
+                ];
+                if (!empty($cursor)) {
+                    $args['page']['cursor'] = $cursor;
+                }
+                $response = $api->get_data('campaigns/' . $campaign . '/members', $args);
                 foreach ($response['data'] as $row) {
-                    if (isset($row['relationships']['patron']['data']['id'])) {
-                        $allPledges[] = $row['relationships']['patron']['data']['id'];
+                    if (isset($row['id'])) {
+                        continue;
                     }
+                    $tiers = [];
+                    foreach ($row['relationships']['currently_entitled_tiers']['data'] as $tier) {
+                        $tiers[] = $tier['id'];
+                    }
+                    $allPledges[] = [
+                        'tiers' => $tiers,
+                        'id' => $row['id']
+                    ];
                 }
             } while (!empty($response['links']['next']));
         }
@@ -187,7 +201,7 @@ class Patreon
      * @param int|null $creator
      * @return self
      */
-    public function forCreator(?int $creator = null): self
+    public function forCreator(?string $creator = null): self
     {
         $self = clone $this;
         $self->forCreator = $creator;
