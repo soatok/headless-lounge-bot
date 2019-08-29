@@ -197,8 +197,8 @@ trait NewMessageTrait
             if ($meta['ok'] && !empty($meta['result'])) {
                 $res = $meta['result'];
                 if (isset($res['username'])) {
-                    $message .= '- ' . $res['title'] .
-                        ' ( @' . $res['username'] . ' )' . PHP_EOL;
+                    $message .= '- ' . addslashes($res['title']) .
+                        ' (@' . $res['username'] . ')' . PHP_EOL;
                 } else {
                     if (empty($res['invite_link'])) {
                         // Attempt to get the invite link
@@ -211,17 +211,17 @@ trait NewMessageTrait
                         }
                     }
                     if (empty($res['invite_link'])) {
-                        $message .= '- ' . $res['title'] .
+                        $message .= '- ' . addslashes($res['title']) .
                             ' (' . $res['invite_link'] . ')' . PHP_EOL;
                         continue;
                     } else {
-                        $message .= '- ' . $res['title'] .
+                        $message .= '- ' . addslashes($res['title']) .
                             ' (_No invite link available_)' . PHP_EOL;
                     }
                 }
             }
         }
-        return $this->sendMessage($message, ['chat_id' => $chatId]);
+        return $this->sendMessage(trim($message), ['chat_id' => $chatId]);
     }
 
     /**
