@@ -268,8 +268,13 @@ trait NewMessageTrait
      */
     protected function handleGroupMessage(array $chat, array $update): bool
     {
-        if (!preg_match('#^/([A-Za-z0-9_]+)[\s]+?([^\s]+)?#', $update['text'], $m)) {
-            return false;
+        $trimmed = trim($update['text']);
+        if (!preg_match('#^/([A-Za-z0-9_]+)[\s]+?([^\s]+)?[\s]+?([^\s]+)?$#', $trimmed, $m)) {
+            if (!preg_match('#^/([A-Za-z0-9_]+)[\s]+?([^\s]+)?$#', $trimmed, $m)) {
+                if (!preg_match('#^/([A-Za-z0-9_]+)[\s]$#', $trimmed, $m)) {
+                    return false;
+                }
+            }
         }
         $chatUser = $this->db->row(
             "SELECT * FROM headless_users WHERE telegram_user = ?",
