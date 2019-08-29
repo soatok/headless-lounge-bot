@@ -316,6 +316,7 @@ trait NewMessageTrait
             'telegram_chat_id' => $update['chat']['id'],
             'channel_user_id' => $chatUser['id']
         ];
+        $message = '';
         if (strtolower($m[2]) === 'twitch') {
             if (empty($chatUser['twitch_user'])) {
                 $this->sendMessage(
@@ -325,8 +326,10 @@ trait NewMessageTrait
                 );
                 return false;
             }
+            $message = 'Twitch subscribers';
             if (!empty($m[3])) {
                 $fields['twitch_sub_minimum'] = (int) $m[3];
+                $message .= ' (Tier ' . $m[3] . '+)';
             }
             $fields['twitch_sub_only'] = true;
         } else if (strtolower($m[2]) === 'patreon') {
@@ -338,8 +341,10 @@ trait NewMessageTrait
                 );
                 return false;
             }
+            $message = 'Patreon supporters';
             if (!empty($m[3])) {
                 $fields['patreon_rank_minimum'] = (int) $m[3];
+                $message .= ' (' . $m[3] . ')';
             }
             $fields['patreon_supporters_only'] = true;
         }
@@ -351,7 +356,14 @@ trait NewMessageTrait
         } else {
             $this->db->update('headless_channels', $fields, ['id' => $chat['channelid']]);
         }
-        return $this->db->commit();
+        if ($this->db->commit()) {
+            $this->sendMessage(
+                'Understood. Only ' . $message . ' will be allowed in this group.',
+                ['chat_id' => $update['chat']['id']]
+            );
+            return true;
+        }
+        return false;
     }
 
     /**
