@@ -156,20 +156,20 @@ trait NewMessageTrait
     protected function commandList(int $telegramUserId, int $chatId): array
     {
         $channels = $this->channels->getTelegramExclusiveAllowedChannels($telegramUserId);
-        $message = '**Channels:**' . PHP_EOL;
+        $message = '**Channels**:' . PHP_EOL;
         foreach ($channels as $chan) {
             $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
             if ($meta['ok'] && !empty($meta['result'])) {
                 $res = $meta['result'];
                 if (isset($res['username'])) {
-                    $message .= ' ' . $res['title'] .
+                    $message .= '* ' . $res['title'] .
                         '(@' . $res['username'] . ')' . PHP_EOL;
                 } else {
-                    $message .= ' ' . $res['title'] .
+                    $message .= '* ' . $res['title'] .
                         '(' . ' ' . ')' . PHP_EOL;
+                    $message .= '`' . json_encode($meta) . '`' . PHP_EOL;
                 }
             }
-            $message .= '`' . json_encode($meta) . '`' . PHP_EOL;
         }
         return $this->sendMessage($message, ['chat_id' => $chatId]);
     }
