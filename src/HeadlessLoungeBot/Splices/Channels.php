@@ -57,7 +57,7 @@ class Channels extends Splice
                  (SELECT count(*)
                   FROM headless_user_service_cache tc
                   WHERE tc.service = 'Twitch'
-                    AND tc.serviceid = u.telegram_user
+                    AND tc.serviceid = u.twitch_user
                     AND (
                         tc.cachedata LIKE '%\"user_id\":{$twitchUser},%'
                             OR 
