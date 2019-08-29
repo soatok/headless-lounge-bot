@@ -402,7 +402,7 @@ trait NewMessageTrait
             $message = 'Patreon supporters';
             if (!empty($m[3])) {
                 $fields['patreon_rank_minimum'] = (int) $m[3];
-                $message .= ' (' . $m[3] . ')';
+                $message .= ' ($' . $m[3] . '/month or more)';
             }
             $fields['patreon_supporters_only'] = true;
         }
@@ -453,6 +453,8 @@ trait NewMessageTrait
      * @param array $update
      * @return bool
      * @throws CryptoException
+     * @throws \Patreon\Exceptions\APIException
+     * @throws \Patreon\Exceptions\CurlException
      * @throws \SodiumException
      */
     protected function handleNewMembers(array $chat, array $update): bool
