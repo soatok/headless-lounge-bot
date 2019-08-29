@@ -116,6 +116,38 @@ class Patreon
     }
 
     /**
+     * @param int $userId
+     * @param int $cents
+     * @return bool
+     * @throws \Patreon\Exceptions\APIException
+     * @throws \Patreon\Exceptions\CurlException
+     * @throws \Soatok\DholeCrypto\Exceptions\CryptoException
+     * @throws \SodiumException
+     */
+    public function patreonUserPledgesAbove(int $userId, int $cents): bool
+    {
+        $apiData = $this->getPledgeData();
+        $tiers = $apiData['tiers'];
+        $pledges = $apiData['pledges'];
+
+        foreach ($pledges as $row) {
+            if ((int) $row['id'] !== (int) $userId) {
+                continue;
+            }
+            foreach ($row['tiers'] as $tierId) {
+                foreach ($tiers as $t) {
+                    if ($t['id'] === $tierId) {
+                        if ($t['amount'] >= $cents) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * @return array
      * @throws \Patreon\Exceptions\APIException
      * @throws \Patreon\Exceptions\CurlException
