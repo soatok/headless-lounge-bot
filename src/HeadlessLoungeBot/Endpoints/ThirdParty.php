@@ -88,6 +88,7 @@ class ThirdParty extends Endpoint
             'redirect_uri' => $this->baseUrl . '/authorize/twitch',
             'response_type' => 'code',
             'scope' => implode(' ', [
+                'channel:read:subscriptions',
                 'channel_check_subscription',
                 'channel_subscriptions',
                 'user_subscriptions'
