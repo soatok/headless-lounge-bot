@@ -533,7 +533,7 @@ trait NewMessageTrait
             $subs = $twitch->getSubscribers();
             // Parse $subs, figure out if new user is a sub or not, kick them otherwise...
             foreach ($subs as $sub) {
-                if ($sub['user_id'] === $linkedAccounts['serviceid']) {
+                if ((int) $sub['user_id'] === (int) $linkedAccounts['serviceid']) {
                     // We found a match!
                     if ($settings['twitch_sub_minimum'] > 0) {
                         // Auto-kick if tier is too low:
