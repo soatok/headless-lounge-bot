@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace Soatok\HeadlessLoungeBot\TelegramTraits;
 
+use ParagonIE\ConstantTime\Base32;
 use ParagonIE\EasyDB\EasyDB;
 use Soatok\DholeCrypto\Exceptions\CryptoException;
 use Soatok\HeadlessLoungeBot\Splices\Channels;
@@ -12,6 +13,7 @@ use Soatok\HeadlessLoungeBot\Twitch;
  * Trait NewMessageTrait
  * @package Soatok\HeadlessLoungeBot\TelegramTraits
  *
+ * @property string $baseUrl
  * @property Channels $channels
  * @property EasyDB $db
  * @property Twitch $twitch
@@ -64,11 +66,8 @@ trait NewMessageTrait
      */
     public function newMessagePrivate(array $update): bool
     {
-        $chat = $this->db->row(
-            "SELECT * FROM headless_channels WHERE telegram_chat_id = ?",
-            $update['chat']['id']
-        );
         $this->users->ensureExists($update['from']['id']);
+        $user = $this->users->getByTelegramUserId($update['from']['id']);
         $state = $this->getStateForUser($update['from']['id']);
         if (empty($state)) {
             if ($update['text'] !== '/start') {
@@ -79,12 +78,18 @@ trait NewMessageTrait
             }
             // Do more here
         }
-        switch ($update['text']) {
+        switch (strtolower(trim($update['text']))) {
             case '/start':
                 $this->commandStart($update['chat']['id']);
                 break;
             case '/list':
                 $this->commandList($update['from']['id']);
+                break;
+            case '/link twitch':
+                $this->commandLink($user, 'Twitch');
+                break;
+            case '/link patreon':
+                $this->commandLink($user, 'Patreon');
                 break;
             case '/status':
                 $this->commandStatus($update);
@@ -93,6 +98,50 @@ trait NewMessageTrait
         $state['greeted'] = true;
         $this->updateState($state, $update['from']['id']);
         return true;
+    }
+
+    /**
+     * @param array $user
+     * @param string $service
+     * @return bool
+     * @throws \Exception
+     */
+    protected function commandLink(array $user, string $service): bool
+    {
+        $this->db->beginTransaction();
+        $exists = $this->db->exists(
+            "SELECT * FROM headless_users_oauth 
+             WHERE userid = ? AND service = ?",
+            $user['userid'],
+            $service
+        );
+        $token = Base32::encodeUpperUnpadded(random_bytes(30));
+        $href = $this->baseUrl . '/thirdparty/' . $token;
+        if ($exists) {
+            $this->db->update(
+                'headless_users_oauth',
+                [
+                    'url_token' => $token
+                ],
+                [
+                    'userid' => $user['userid'],
+                    'service' => $service
+                ]
+            );
+        } else {
+            $this->db->insert(
+                'headless_users_oauth',
+                [
+                    'url_token' => $token,
+                    'userid' => $user['userid'],
+                    'service' => $service
+                ]
+            );
+        }
+        $this->sendMessage(
+            'Please visit this URL to link your ' . $service . ' account:' . $href
+        );
+        return $this->db->commit();
     }
 
     /**
@@ -171,6 +220,9 @@ trait NewMessageTrait
         if (empty($chat)) {
             $chat = [];
         }
+        if (!empty($chat['exceptions'])) {
+            $chat['exceptions'] = json_decode($chat['exceptions'], true);
+        }
 
         // Process new members: Are they allowed?
         if (!empty($update['new_chat_members'])) {
@@ -229,6 +281,9 @@ trait NewMessageTrait
             );
             return false;
         }
+        if ($m[1] === 'permit' && !empty($m[2])) {
+            return $this->groupPermitCommand($chat, $chatUser, $update, $m);
+        }
 
         // TODO: Other commands
 
@@ -280,11 +335,28 @@ trait NewMessageTrait
 
         $this->db->beginTransaction();
         if (empty($chat)) {
+            $fields['exceptions'] = '[]';
             $this->db->insert('headless_channels', $fields);
         } else {
             $this->db->update('headless_channels', $fields, ['id' => $chat['channelid']]);
         }
         return $this->db->commit();
+    }
+
+    /**
+     * @param array $chat
+     * @param array $chatUser
+     * @param array $update
+     * @param array $m
+     * @return bool
+     */
+    protected function groupPermitCommand(
+        array $chat,
+        array $chatUser,
+        array $update,
+        array $m
+    ): bool {
+        return false;
     }
 
     /**
@@ -363,6 +435,17 @@ trait NewMessageTrait
         if (empty($linkedAccounts)) {
             // User does not exist in our system!
             return true;
+        }
+
+        // Allow exceptions to be granted...
+        if (!empty($settings['exceptions'])) {
+            if (is_string($settings['exceptions'])) {
+                $settings['exceptions'] = json_decode($settings['exceptions'], true);
+            }
+            if (in_array($linkedAccounts['userid'], $settings['exceptions'], true)) {
+                // You are an exception!
+                return false;
+            }
         }
 
         // This affects our final fallback behavior.

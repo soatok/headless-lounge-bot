@@ -16,13 +16,21 @@ return function (App $app) {
     }
     $app->any('/' . $token, 'telegram-updates');
     sodium_memzero($token);
+    $app->any('/authorize/{service}', 'authorize');
+    $app->any('/thirdparty/{token}', 'thirdparty');
     $app->any('/', 'homepage');
     $app->any('', 'homepage');
 
+    $container['authorize'] = function (Container $c) {
+        return new Authorize($c);
+    };
     $container['homepage'] = function (Container $c) {
         return new HomePage($c);
     };
     $container['telegram-updates'] = function (Container $c) {
         return new TelegramUpdates($c);
+    };
+    $container['thirdparty'] = function (Container $c) {
+        return new ThirdParty($c);
     };
 };

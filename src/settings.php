@@ -22,6 +22,13 @@ $twitch = [
 if (file_exists(APP_ROOT . '/local/twitch.php')) {
     $twitch = include APP_ROOT . '/local/twitch.php';
 };
+$patreon = [
+    'client-id' => '',
+    'client-secret' => ''
+];
+if (file_exists(APP_ROOT . '/local/patreon.php')) {
+    $patreon = include APP_ROOT . '/local/patreon.php';
+};
 
 if (file_exists(APP_ROOT . '/local/key.php')) {
     $key = include APP_ROOT . '/local/key.php';
@@ -50,6 +57,7 @@ $default = [
         'telegram' => new HiddenString($telegram),
         'tg-bot-username' => $botUsername,
         'tg-bot-user-id' => $botUserId,
+        'patreon' => $patreon,
         'twitch' => $twitch,
     ],
 ];

@@ -6,6 +6,7 @@ use Interop\Container\Exception\ContainerException;
 use ParagonIE\Certainty\Exception\CertaintyException;
 use ParagonIE\ConstantTime\Base32;
 use Patreon\AuthUrl;
+use Patreon\OAuth;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Container;
@@ -19,7 +20,7 @@ use Soatok\HeadlessLoungeBot\Splices\Users;
  * Class ThirdParty
  * @package Soatok\HeadlessLoungeBot\Endpoints
  */
-class ThirdParty extends Endpoint
+class Authorize extends Endpoint
 {
     /** @var string $baseUrl */
     protected $baseUrl;
@@ -46,7 +47,15 @@ class ThirdParty extends Endpoint
      */
     public function __construct(Container $container)
     {
-        $this->baseUrl = $container['settings']['base-url'];
+        if (
+            empty($_SESSION['twitch_oauth_id'])
+            ||
+            empty($_GET['code'])
+            ||
+            empty($_GET['state'])
+        ) {
+            return $this->redirect('/');
+        }
         $this->oauthSettings = [
             'patreon' => $container['settings']['patreon'],
             'twitch' => $container['settings']['twitch'],
@@ -54,52 +63,58 @@ class ThirdParty extends Endpoint
         $this->telegram = new Telegram($container);
         $this->twitch = new Twitch($container);
         $this->users = $this->splice('Users');
+        $this->baseUrl = $container['settings']['base-url'];
 
         parent::__construct($container);
     }
 
     /**
-     * @param array $row
      * @return ResponseInterface
-     * @throws \Exception
      */
-    protected function handleTwitchOauth(array $row): ResponseInterface
+    protected function authorizePatreon(): ResponseInterface
     {
-        $_SESSION['twitch_oauth_state'] = $row;
-        $_SESSION['twitch_oauth_id'] = Base32::encodeUpperUnpadded(random_bytes(30));
-        $url = 'https://id.twitch.tv/oauth2/authorize?' . http_build_query([
-            'client_id' => $this->oauthSettings['twitch']['client-id'],
-            'redirect_uri' => $this->baseUrl . '/authorize/twitch',
-            'response_type' => 'token',
-            'scope' => implode(' ', [
-                'channel_check_subscription',
-                'channel_subscriptions',
-                'user_subscriptions'
-            ]),
-            'state' => $_SESSION['twitch_oauth_id']
-        ]);
-        return $this->redirect($url, 302, true);
+        if (
+            empty($_SESSION['patreon_oauth_id'])
+                ||
+            empty($_GET['code'])
+                ||
+            empty($_GET['state'])
+        ) {
+            return $this->redirect('/');
+        }
+
+        return $this->json(['work in progress']);
     }
 
     /**
-     * @param array $row
      * @return ResponseInterface
-     * @throws \Exception
+     * @throws ContainerException
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
      */
-    protected function handlePatreonOauth(array $row): ResponseInterface
+    protected function authorizeTwitch(): ResponseInterface
     {
-        $_SESSION['patreon_oauth_state'] = $row;
-        $_SESSION['patreon_oauth_id'] = Base32::encodeUpperUnpadded(random_bytes(30));
-        $oauth = (new AuthUrl($this->oauthSettings['patreon']['client-id']))
-            ->withRedirectUri($this->baseUrl . '/authorize/patreon')
-            ->withState(['oauth' => $_SESSION['patreon_oauth_id']])
-            ->withScopes([
-                'identity',
-                'identity.memberships',
-                'campaigns',
-                'campaign.members'
-            ]);
-        return $this->redirect($oauth->buildUrl(), 302, true);
+        if (empty($_SESSION['twitch_oauth_id'])) {
+            return $this->redirect('/');
+        }
+
+        if (empty($_GET['access_token'])) {
+            /*
+             * Let's not mince words: Twitch's API is stupid.
+             *
+             * Instead of passing this back as a request parameter, they pass it
+             * as a URL fragment, so we have to fetch document.location.hash from
+             * JavaScript and pass it in a follow-up request.
+             *
+             * Why? Because Twitch wants us to open our doors to Open Redirect
+             * vulnerabilities apparently!
+             *
+             * So let's just kludge this...
+             */
+            return $this->view('twitch.twig');
+        }
+        return $this->json(['work in progress']);
     }
 
     /**
@@ -114,23 +129,17 @@ class ThirdParty extends Endpoint
         ?ResponseInterface $response = null,
         array $routerParams = []
     ): ResponseInterface {
-        if (empty($routerParams['token'])) {
+        if (empty($routerParams['service'])) {
             return $this->redirect('/');
         }
 
-        try {
-            $oauth = $this->users->getByThirdPartyUrl($routerParams['token']);
-        } catch (UserNotFoundException $ex) {
-            return $this->redirect('/');
-        }
-
-        switch ($oauth['service']) {
+        switch ($routerParams['service']) {
             case 'Twitch':
-                return $this->handleTwitchOauth($oauth);
+                return $this->authorizeTwitch();
             case 'Patreon':
-                return $this->handlePatreonOauth($oauth);
+                return $this->authorizePatreon();
             default:
-                return $this->json([]);
+                return $this->redirect('/');
         }
     }
 }

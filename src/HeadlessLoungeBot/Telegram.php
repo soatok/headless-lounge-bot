@@ -23,6 +23,9 @@ class Telegram
 {
     use NewMessageTrait;
 
+    /** @var string $baseUrl */
+    protected $baseUrl;
+
     /** @var string $botUsername */
     protected $botUsername;
 
@@ -68,6 +71,7 @@ class Telegram
         }
         /** @var string $botName */
         $botName = $c['settings']['tg-bot-username'];
+        $this->baseUrl = $c['settings']['base-url'];
         $this->botUsername = $botName;
         $this->botUserId = $c['settings']['tg-bot-user-id'];
         $this->db = $c->get('db');

@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace Soatok\HeadlessLoungeBot\Splices;
 
 use Soatok\AnthroKit\Splice;
+use Soatok\HeadlessLoungeBot\Exceptions\UserNotFoundException;
 
 /**
  * Class Users
@@ -69,6 +70,27 @@ class Users extends Splice
             'patreon_user' => $patreonUser
         ]);
         return $this->db->commit();
+    }
+
+    /**
+     * @param string $token
+     * @return array
+     * @throws UserNotFoundException
+     */
+    public function getByThirdPartyUrl(string $token): array
+    {
+        $oauth = $this->db->row(
+            "SELECT * FROM headless_users_oauth WHERE url_token = ?",
+            $token
+        );
+        if (empty($oauth)) {
+            throw new UserNotFoundException('Invalid URL token');
+        }
+        $oauth['user_row'] = $this->db->row(
+            "SELECT * FROM headless_users WHERE userid = ?",
+            $oauth['userid']
+        );
+        return $oauth;
     }
 
     /**
