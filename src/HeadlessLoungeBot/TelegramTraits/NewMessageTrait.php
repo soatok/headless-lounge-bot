@@ -192,7 +192,7 @@ trait NewMessageTrait
             try {
                 $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
             } catch (BadResponseException $ex) {
-                $meta['ok'] = false;
+                $meta = json_decode($ex->getResponse()->getBody()->getContents(), true);
             }
             if ($meta['ok'] && !empty($meta['result'])) {
                 $res = $meta['result'];
@@ -201,11 +201,13 @@ trait NewMessageTrait
                         ' (@' . $res['username'] . ')' . PHP_EOL;
                 } else {
                     if (empty($res['invite_link'])) {
+                        // Attempt to get the invite link
                         try {
                             $this->apiRequest('exportChatInviteLink', ['chat_id' => $chan]);
                             $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
                             $res = $meta['result'];
                         } catch (BadResponseException $ex) {
+                            $message .= $ex->getMessage() . PHP_EOL;
                         }
                     }
                     if (empty($res['invite_link'])) {

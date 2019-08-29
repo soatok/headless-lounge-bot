@@ -65,7 +65,7 @@ class Channels extends Splice
                     )
                  ) > 0
                )
-             ) /*OR (c.patreon_supporters_only AND (
+             ) OR (c.patreon_supporters_only AND (
                  (SELECT count(*)
                   FROM headless_user_service_cache pc
                   WHERE pc.service = 'Patreon'
@@ -77,7 +77,7 @@ class Channels extends Splice
                     )
                  ) > 0
                )
-             )*/"
+             )"
         ) as $li) {
             $list []= $li['telegram_chat_id'];
         }
