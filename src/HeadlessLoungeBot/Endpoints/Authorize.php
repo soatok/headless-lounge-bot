@@ -169,7 +169,7 @@ class Authorize extends Endpoint
         $response = $http->get('https://api.twitch.tv/helix/users', [
             'headers' => [
                 'Client-ID' => $this->oauthSettings['twitch']['client-id'],
-                'Authorization' => 'Bearer' . $tokens['access_token']
+                'Authorization' => 'Bearer ' . $tokens['access_token']
             ]
         ]);
         $ident = json_decode($response->getBody()->getContents(), true);
