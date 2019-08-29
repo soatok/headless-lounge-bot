@@ -159,12 +159,13 @@ trait NewMessageTrait
         $message = '**Channels:**' . PHP_EOL;
         foreach ($channels as $chan) {
             $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
-            if ($meta['ok'] && !empty($meta['results'])) {
-                if (isset($meta['results']['username'])) {
-                    $message .= ' ' . $meta['results']['title'] .
-                        '(@' . $meta['results']['username'] . ')' . PHP_EOL;
+            if ($meta['ok'] && !empty($meta['result'])) {
+                $res = $meta['result'];
+                if (isset($res['username'])) {
+                    $message .= ' ' . $res['title'] .
+                        '(@' . $res['username'] . ')' . PHP_EOL;
                 } else {
-                    $message .= ' ' . $meta['results']['title'] .
+                    $message .= ' ' . $res['title'] .
                         '(' . ' ' . ')' . PHP_EOL;
                 }
             }
