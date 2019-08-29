@@ -166,7 +166,8 @@ trait NewMessageTrait
                         ' (@' . $res['username'] . ')' . PHP_EOL;
                 } else {
                     if (!empty($res['invite_link'])) {
-                        $this->apiRequest('exportChatInviteLink', ['chat_id' => $chan]);
+                        $link = $this->apiRequest('exportChatInviteLink', ['chat_id' => $chan]);
+                        $message .= '`' . json_encode($link) . '`' . PHP_EOL;
                         $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
                         $res = $meta['result'];
                     }
