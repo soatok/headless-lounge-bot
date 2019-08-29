@@ -22,5 +22,5 @@ foreach ($db->run(
 ) as $channel) {
     $twitch = $twitch->forChannel((int) $channel['twitch_user']);
     $twitch->clearCache();
-    var_dump($twitch->getSubscribers());
+    $twitch->getSubscribers();
 }
