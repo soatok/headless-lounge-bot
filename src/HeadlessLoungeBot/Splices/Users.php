@@ -3,7 +3,11 @@ declare(strict_types=1);
 namespace Soatok\HeadlessLoungeBot\Splices;
 
 use ParagonIE\ConstantTime\Base32;
+use ParagonIE\HiddenString\HiddenString;
+use Slim\Container;
 use Soatok\AnthroKit\Splice;
+use Soatok\DholeCrypto\Key\SymmetricKey;
+use Soatok\DholeCrypto\Symmetric;
 use Soatok\HeadlessLoungeBot\Exceptions\UserNotFoundException;
 
 /**
@@ -12,6 +16,15 @@ use Soatok\HeadlessLoungeBot\Exceptions\UserNotFoundException;
  */
 class Users extends Splice
 {
+    /** @var SymmetricKey $encKey */
+    protected $encKey;
+
+    public function __construct(Container $container)
+    {
+        parent::__construct($container);
+        $this->encKey = $container['settings']['encryption-key'];
+    }
+
     /**
      * @param string $service
      * @param int $userId
@@ -92,8 +105,14 @@ class Users extends Splice
             'headless_users_oauth',
             [
                 'serviceid' => $tokens['account_id'],
-                'refresh_token' => $tokens['refresh_token'],
-                'access_token' => $tokens['access_token'],
+                'refresh_token' => Symmetric::encrypt(
+                    new HiddenString($tokens['refresh_token']),
+                    $this->encKey
+                ),
+                'access_token' =>Symmetric::encrypt(
+                    new HiddenString($tokens['access_token']),
+                    $this->encKey
+                ),
                 'access_expires' => $expires,
                 'scope' => json_encode($tokens['scope'] ?? ''),
                 'url_token' => Base32::encodeUpperUnpadded(random_bytes(30))
@@ -135,8 +154,14 @@ class Users extends Splice
             'headless_users_oauth',
             [
                 'serviceid' => $tokens['account_id'],
-                'refresh_token' => $tokens['refresh_token'],
-                'access_token' => $tokens['access_token'],
+                'refresh_token' => Symmetric::encrypt(
+                    new HiddenString($tokens['refresh_token']),
+                    $this->encKey
+                ),
+                'access_token' =>Symmetric::encrypt(
+                    new HiddenString($tokens['access_token']),
+                    $this->encKey
+                ),
                 'access_expires' => $expires,
                 'scope' => json_encode($tokens['scope'] ?? ''),
                 'url_token' => Base32::encodeUpperUnpadded(random_bytes(30))
