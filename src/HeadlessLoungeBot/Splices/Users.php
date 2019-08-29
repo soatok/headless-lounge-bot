@@ -51,6 +51,32 @@ class Users extends Splice
      * @param int|null $patreonUser
      * @return bool
      */
+    public function ensureExists(
+        int $telegramUser,
+        ?int $twitchUser = null,
+        ?int $patreonUser = null
+    ): bool {
+        $this->db->beginTransaction();
+        if ($this->db->exists(
+            "SELECT count(*) FROM headless_users WHERE telegram_user = ?",
+            $telegramUser
+        )) {
+            return $this->db->rollBack();
+        }
+        $this->db->insert('headless_users', [
+            'telegram_user' => $telegramUser,
+            'twitch_user' => $twitchUser,
+            'patreon_user' => $patreonUser
+        ]);
+        return $this->db->commit();
+    }
+
+    /**
+     * @param int $telegramUser
+     * @param int|null $twitchUser
+     * @param int|null $patreonUser
+     * @return bool
+     */
     public function upsert(
         int $telegramUser,
         ?int $twitchUser = null,

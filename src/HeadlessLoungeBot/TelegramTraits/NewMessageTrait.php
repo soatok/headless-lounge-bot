@@ -68,6 +68,7 @@ trait NewMessageTrait
             "SELECT * FROM headless_channels WHERE telegram_chat_id = ?",
             $update['chat']['id']
         );
+        $this->users->ensureExists($update['from']['id']);
         $state = $this->getStateForUser($update['from']['id']);
         if (empty($state)) {
             if ($update['text'] !== '/start') {
@@ -196,6 +197,12 @@ trait NewMessageTrait
             "SELECT * FROM headless_users WHERE telegram_user = ?",
             $update['from']['id']
         );
+        if (empty($chatUser)) {
+            $this->sendMessage(
+                'Please talk to me directly to setup and link your accounts.'
+            );
+            return false;
+        }
         $administrators = $this->getAdministrators($update['chat']['id']);
         $isAdmin = !empty($update['chat']['all_members_are_administrators']);
         if (!$isAdmin) {
