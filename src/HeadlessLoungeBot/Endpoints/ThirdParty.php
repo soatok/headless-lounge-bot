@@ -91,7 +91,6 @@ class ThirdParty extends Endpoint
                 'channel:read:subscriptions',
                 'channel_check_subscription',
                 'channel_subscriptions',
-                'user:subscriptions',
                 'user_subscriptions'
             ]),
             'state' => $cipher
