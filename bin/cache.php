@@ -21,5 +21,6 @@ foreach ($db->run(
     JOIN headless_users hu on c.channel_user_id = hu.userid"
 ) as $channel) {
     $twitch = $twitch->forChannel((int) $channel['twitch_user']);
-    var_dump($twitch->clearCache()->getSubscribers());
+    $twitch->clearCache();
+    var_dump($twitch->getSubscribers());
 }
