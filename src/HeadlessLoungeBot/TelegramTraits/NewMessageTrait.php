@@ -334,7 +334,7 @@ trait NewMessageTrait
         $trimmed = trim($update['text']);
         if (!preg_match('#^/([A-Za-z0-9_]+)[\s]+?([^\s]+)?[\s]+?([^\s]+)?$#', $trimmed, $m)) {
             if (!preg_match('#^/([A-Za-z0-9_]+)[\s]+?([^\s]+)?$#', $trimmed, $m)) {
-                if (!preg_match('#^/([A-Za-z0-9_]+)[\s]$#', $trimmed, $m)) {
+                if (!preg_match('#^/([A-Za-z0-9_]+)$#', $trimmed, $m)) {
                     return false;
                 }
             }
