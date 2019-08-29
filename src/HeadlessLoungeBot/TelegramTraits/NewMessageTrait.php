@@ -211,18 +211,17 @@ trait NewMessageTrait
             $statusReport .= 'Twitch: _Not authenticated_' . PHP_EOL;
             $this->users->upsert($update['from']['id']);
         } else {
-            $patreon = $this->users->getPatreonIntegration($user['userid']);
-            if (empty($patreon)) {
+            if (empty($user['patreon_user'])) {
                 $statusReport .= 'Patreon: _Not authenticated_' . PHP_EOL;
             } else {
-                $statusReport .= 'Patreon: Unknown'. PHP_EOL;
+                $statusReport .= 'Patreon: *Accounts Linked*'. PHP_EOL;
+                // $patreon = $this->users->getPatreonIntegration($user['userid']);
             }
-
-            $twitch = $this->users->getTwitchIntegration($user['userid']);
-            if (empty($twitch)) {
+            if (empty($user['twitch_user'])) {
                 $statusReport .= 'Twitch: _Not authenticated_' . PHP_EOL;
             } else {
-                $statusReport .= 'Twitch: Unknown'. PHP_EOL;
+                $statusReport .= 'Twitch: *Accounts Linked*'. PHP_EOL;
+                // $twitch = $this->users->getTwitchIntegration($user['userid']);
             }
         }
 
