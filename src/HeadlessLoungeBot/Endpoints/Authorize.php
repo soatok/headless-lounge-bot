@@ -86,7 +86,7 @@ class Authorize extends Endpoint
         ) {
             return $this->redirect('/');
         }
-        $state = json_decode(base64_decode($_GET['state'], true));
+        $state = json_decode(base64_decode($_GET['state']), true);
         if (empty($state['oauth'])) {
             // Error:
             return $this->redirect('/');
