@@ -49,7 +49,7 @@ class Twitch
      */
     public function __construct(Container $c, ?Client $http = null)
     {
-        /** @var array $token */
+        /** @var array $twitch */
         $twitch = $c['settings']['twitch'];
 
         $this->clientId = $twitch['client-id'] ?? '';
