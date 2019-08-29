@@ -168,6 +168,7 @@ class Authorize extends Endpoint
         // Get the user ID:
         $response = $http->get('https://api.twitch.tv/helix/users', [
             'headers' => [
+                'Client-ID' => $this->oauthSettings['twitch']['client-id'],
                 'Authorization' => 'Bearer' . $tokens['access_token']
             ]
         ]);
@@ -192,7 +193,7 @@ class Authorize extends Endpoint
      */
     protected function checkExpired(array $oauth): bool
     {
-        if (empty($exp['expires'])) {
+        if (empty($oauth['expires'])) {
             return true;
         }
         try {
