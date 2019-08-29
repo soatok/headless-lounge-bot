@@ -55,6 +55,9 @@ $default = [
         ],
 
         'telegram' => new HiddenString($telegram),
+        'template_paths' => [
+            APP_ROOT . '/templates'
+        ],
         'tg-bot-username' => $botUsername,
         'tg-bot-user-id' => $botUserId,
         'patreon' => $patreon,
