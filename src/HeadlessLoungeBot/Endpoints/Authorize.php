@@ -111,7 +111,10 @@ class Authorize extends Endpoint
      * @param ResponseInterface|null $response
      * @param array $routerParams
      * @return ResponseInterface
-     * @throws \Exception
+     * @throws ContainerException
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
      */
     public function __invoke(
         RequestInterface $request,
@@ -122,10 +125,10 @@ class Authorize extends Endpoint
             return $this->redirect('/');
         }
 
-        switch ($routerParams['service']) {
-            case 'Twitch':
+        switch (strtolower($routerParams['service'])) {
+            case 'twitch':
                 return $this->authorizeTwitch();
-            case 'Patreon':
+            case 'patreon':
                 return $this->authorizePatreon();
             default:
                 return $this->redirect('/');

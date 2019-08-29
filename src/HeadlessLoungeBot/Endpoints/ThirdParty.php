@@ -67,6 +67,7 @@ class ThirdParty extends Endpoint
     {
         $_SESSION['twitch_oauth_state'] = $row;
         $_SESSION['twitch_oauth_id'] = Base32::encodeUpperUnpadded(random_bytes(30));
+        session_write_close();
         $url = 'https://id.twitch.tv/oauth2/authorize?' . http_build_query([
             'client_id' => $this->oauthSettings['twitch']['client-id'],
             'redirect_uri' => $this->baseUrl . '/authorize/twitch',
@@ -90,6 +91,7 @@ class ThirdParty extends Endpoint
     {
         $_SESSION['patreon_oauth_state'] = $row;
         $_SESSION['patreon_oauth_id'] = Base32::encodeUpperUnpadded(random_bytes(30));
+        session_write_close();
         $oauth = (new AuthUrl($this->oauthSettings['patreon']['client-id']))
             ->withRedirectUri($this->baseUrl . '/authorize/patreon')
             ->withState(['oauth' => $_SESSION['patreon_oauth_id']])
