@@ -148,7 +148,7 @@ class Patreon
             $campaign = $camp['id'];
             do {
                 $args = [
-                    'include' => 'currently_entitled_tiers',
+                    'include' => 'currently_entitled_tiers,user',
                     'page' => [
                         'count' => 25
                     ]
@@ -165,9 +165,10 @@ class Patreon
                     foreach ($row['relationships']['currently_entitled_tiers']['data'] as $tier) {
                         $tiers[] = $tier['id'];
                     }
+
                     $allPledges[] = [
                         'tiers' => $tiers,
-                        'id' => $row['id']
+                        'id' => $row['relationships']['user']['data']['id']
                     ];
                 }
             } while (!empty($response['links']['next']));
