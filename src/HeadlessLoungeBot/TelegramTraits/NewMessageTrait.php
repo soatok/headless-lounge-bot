@@ -5,6 +5,8 @@ namespace Soatok\HeadlessLoungeBot\TelegramTraits;
 use GuzzleHttp\Exception\BadResponseException;
 use ParagonIE\ConstantTime\Base32;
 use ParagonIE\EasyDB\EasyDB;
+use Slim\Http\Response;
+use Slim\Http\Stream;
 use Soatok\DholeCrypto\Exceptions\CryptoException;
 use Soatok\DholeCrypto\Key\SymmetricKey;
 use Soatok\HeadlessLoungeBot\Exceptions\CannotCreate;
@@ -192,7 +194,11 @@ trait NewMessageTrait
             try {
                 $meta = $this->apiRequest('getChat', ['chat_id' => $chan]);
             } catch (BadResponseException $ex) {
-                $meta = json_decode($ex->getResponse()->getBody()->getContents(), true);
+                /** @var Response $response */
+                $response = $ex->getResponse();
+                /** @var Stream $body */
+                $body = $response->getBody();
+                $meta = json_decode($body->getContents(), true);
             }
             if ($meta['ok'] && !empty($meta['result'])) {
                 $res = $meta['result'];
@@ -227,11 +233,15 @@ trait NewMessageTrait
                 'parse_mode' => 'HTML'
             ]);
         } catch (BadResponseException $ex) {
+            /** @var Response $response */
+            $response = $ex->getResponse();
+            /** @var Stream $body */
+            $body = $response->getBody();
             throw new \Exception(
                 json_encode([
                     'msg' => $ex->getMessage(),
                     'message' => $message,
-                    'req' => $ex->getResponse()->getBody()->getContents()
+                    'req' => $body->getContents()
                 ]),
                 0,
                 $ex
@@ -630,43 +640,42 @@ trait NewMessageTrait
 
         // Twitch:
         if ($settings['twitch_sub_only'] && !empty($owner['twitch_user'])) {
-            $twitch = $this->twitch->forChannel($owner['twitch_user']);
-            $subs = $twitch->getSubscribers();
-            // Parse $subs, figure out if new user is a sub or not, kick them otherwise...
-            foreach ($subs as $sub) {
-                if ((int) $sub['user_id'] === (int) $linkedAccounts['serviceid']) {
-                    // We found a match!
-                    if ($settings['twitch_sub_minimum'] > 0) {
-                        // Auto-kick if tier is too low:
-                        if ($sub['tier'] < $settings['twitch_sub_minimum']) {
-                            $this->sendMessage(
-                                'Tier too low.',
-                                ['chat_id' => $chatId]
-                            );
-                            return true;
+            if (!empty($linkedAccounts['twitch_user'])) {
+                $twitch = $this->twitch->forChannel($owner['twitch_user']);
+                $subs = $twitch->getSubscribers();
+                // Parse $subs, figure out if new user is a sub or not, kick them otherwise...
+                foreach ($subs as $sub) {
+                    if ((int)$sub['user_id'] === (int)$linkedAccounts['serviceid']) {
+                        // We found a match!
+                        if ($settings['twitch_sub_minimum'] > 0) {
+                            // Don't auto-kick if tier is sufficient...
+                            if ($sub['tier'] >= $settings['twitch_sub_minimum']) {
+                                return false;
+                            }
                         }
+                        // Don't autokick
                         return false;
                     }
-                    // Don't autokick
-                    return false;
                 }
             }
         }
 
         // Patreon:
         if ($settings['patreon_supporters_only'] && !empty($owner['patreon_user'])) {
-            $patreon = $this->patreon->forCreator($owner['patreon_user']);
-            $patreonUser = $this->db->cell(
-                "SELECT patreon_user FROM headless_users WHERE userid = ?",
-                $userId
-            );
-
-            if (!empty($patreonUser)) {
-                // If you pledge greater than or equal to the minimum, don't kick.
-                return !$patreon->patreonUserPledgesAbove(
-                    $patreonUser,
-                    ($settings['patreon_rank_minimum'] ?? 0) * 100
+            if (!empty($linkedAccounts['patreon_user'])) {
+                $patreon = $this->patreon->forCreator($owner['patreon_user']);
+                $patreonUser = $this->db->cell(
+                    "SELECT patreon_user FROM headless_users WHERE userid = ?",
+                    $userId
                 );
+
+                if (!empty($patreonUser)) {
+                    // If you pledge greater than or equal to the minimum, don't kick.
+                    return !$patreon->patreonUserPledgesAbove(
+                        $patreonUser,
+                        ($settings['patreon_rank_minimum'] ?? 0) * 100
+                    );
+                }
             }
         }
         return $autoKick;
