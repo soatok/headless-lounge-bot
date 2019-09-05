@@ -85,6 +85,8 @@ class Patreon
 
     /**
      * @return array
+     * @throws \Patreon\Exceptions\APIException
+     * @throws \Patreon\Exceptions\CurlException
      * @throws \Soatok\DholeCrypto\Exceptions\CryptoException
      * @throws \SodiumException
      */
@@ -96,7 +98,11 @@ class Patreon
         }
         $api = new API($token->getString());
         $api->api_return_format = 'array';
-        return $api->current_user_campaigns();
+        $campaigns = $api->current_user_campaigns();
+        if (!is_array($campaigns)) {
+            throw new \TypeError();
+        }
+        return $campaigns;
     }
 
     /**
@@ -161,6 +167,7 @@ class Patreon
         if (!$api) {
             return [];
         }
+        /** @var array $campaigns */
         $campaigns = $api->current_user_campaigns();
         if (empty($campaigns)) {
             return [];
