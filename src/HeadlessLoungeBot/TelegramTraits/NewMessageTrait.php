@@ -663,11 +663,8 @@ trait NewMessageTrait
         // Patreon:
         if ($settings['patreon_supporters_only'] && !empty($owner['patreon_user'])) {
             if (!empty($linkedAccounts['patreon_user'])) {
-                $patreon = $this->patreon->forCreator($owner['patreon_user']);
-                $patreonUser = $this->db->cell(
-                    "SELECT patreon_user FROM headless_users WHERE userid = ?",
-                    $userId
-                );
+                $patreon = $this->patreon->forCreator((string) $owner['patreon_user']);
+                $patreonUser = $linkedAccounts['patreon_user'];
 
                 if (!empty($patreonUser)) {
                     // If you pledge greater than or equal to the minimum, don't kick.
