@@ -562,6 +562,10 @@ trait NewMessageTrait
                 );
                 */
                 $this->kickUser($update['chat']['id'], $new_chat_member['id']);
+                $this->sendMessage(
+                    'You are not known to the Headless Lounge Bot.',
+                    ['chat_id' => $new_chat_member['id']]
+                );
             } elseif ($this->autoKickUser(
                 $chat,
                 $update['chat']['id'],
