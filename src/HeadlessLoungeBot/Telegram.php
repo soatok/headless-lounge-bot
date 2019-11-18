@@ -172,6 +172,8 @@ class Telegram
      * @param array $update
      * @return bool
      * @throws CryptoException
+     * @throws \Patreon\Exceptions\APIException
+     * @throws \Patreon\Exceptions\CurlException
      * @throws \SodiumException
      */
     protected function processNewMessage(array $update)

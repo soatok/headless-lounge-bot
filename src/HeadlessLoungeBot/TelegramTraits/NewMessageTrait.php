@@ -109,6 +109,14 @@ trait NewMessageTrait
             }
             // Do more here
         }
+        if (strpos($update['text'], '--debug') !== false) {
+            // Allow debug flag to be passed by owner only.
+            $update['text'] = str_replace('--debug', '', $update['text']);
+            if ($user['userid'] === 1) {
+                set_error_handler([$this, 'sendErrorDebugMessage']);
+                set_exception_handler([$this, 'sendExceptionDebugMessage']);
+            }
+        }
         switch (strtolower(trim($update['text']))) {
             case '/about':
                 $this->aboutCommand($update['chat']['id']);
@@ -695,8 +703,62 @@ trait NewMessageTrait
     }
 
     /**
+     * @param int $errno
+     * @param string $errstr
+     * @param string $errfile
+     * @param int $errline
+     * @param array $errcontext
+     * @return bool
+     */
+    public function sendErrorDebugMessage(
+        int $errno,
+        string $errstr,
+        string $errfile = '',
+        int $errline = 0,
+        array $errcontext = []
+    ): bool {
+        $message = "An error has occurred:\n\n```" . json_encode(
+                [
+                    'error' => $errstr,
+                    'file' => $errfile,
+                    'line' => $errline,
+                    'context' => $errcontext
+                ],
+                JSON_PRETTY_PRINT
+            ) . "\n```\n";
+        $chatId = $this->db->cell(
+            'SELECT telegram_user FROM headless_users WHERE userid = ?',
+            1
+        );
+        $this->sendMessage($message, ['chat_id' => $chatId]);
+        return true;
+    }
+
+    /**
+     * @param \Exception $ex
+     * @return bool
+     */
+    public function sendExceptionDebugMessage(\Exception $ex): bool
+    {
+        $message = "An error has occurred:\n\n```" . json_encode(
+                [
+                    'error' => $ex->getMessage(),
+                    'file' => $ex->getFile(),
+                    'line' => $ex->getLine(),
+                    'context' => $ex->getTrace()
+                ],
+                JSON_PRETTY_PRINT
+            ) . "\n```\n";
+        $chatId = $this->db->cell(
+            'SELECT telegram_user FROM headless_users WHERE userid = ?',
+            1
+        );
+        $this->sendMessage($message, ['chat_id' => $chatId]);
+        return true;
+    }
+
+    /**
      * @param array $user
-     * @throws CannotCreate
      * @psalm-suppress MissingFile
      */
     protected function checkCanBeginEnforce(array $user): void
